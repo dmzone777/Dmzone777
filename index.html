@@ -1,12 +1,108 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Site Live Test</title>
-  <meta name="viewport" content="width=device-width1">
+<meta charset="UTF-8">
+<title>Video to Audio Converter</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+    body{
+        font-family: Arial, sans-serif;
+        background: #0f172a;
+        color: white;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+    }
+    .box{
+        background: #020617;
+        padding: 25px;
+        border-radius: 12px;
+        width: 320px;
+        text-align: center;
+        box-shadow: 0 0 15px #000;
+    }
+    h2{
+        margin-bottom: 15px;
+    }
+    input{
+        width: 100%;
+        margin-bottom: 15px;
+    }
+    button{
+        width: 100%;
+        padding: 12px;
+        border: none;
+        border-radius: 8px;
+        background: #22c55e;
+        color: black;
+        font-size: 16px;
+        font-weight: bold;
+        cursor: pointer;
+    }
+    button:hover{
+        background: #16a34a;
+    }
+    a{
+        display: none;
+        margin-top: 15px;
+        color: #38bdf8;
+        font-weight: bold;
+        text-decoration: none;
+    }
+</style>
 </head>
 <body>
-  <h1>✅ Site Live Hai</h1>
-  <p>Agar ye text dikh raha hai, GitHub Pages sahi kaam kar raha hai.</p>
+
+<div class="box">
+    <h2>🎥 Video ➜ 🎵 Audio</h2>
+    <input type="file" id="videoInput" accept="video/*">
+    <button onclick="convert()">Convert to MP3</button>
+    <a id="download">⬇ Download Audio</a>
+</div>
+
+<script>
+async function convert(){
+    const file = document.getElementById("videoInput").files[0];
+    if(!file){
+        alert("Please select a video file");
+        return;
+    }
+
+    const video = document.createElement("video");
+    video.src = URL.createObjectURL(file);
+    video.crossOrigin = "anonymous";
+
+    const audioCtx = new AudioContext();
+    const source = audioCtx.createMediaElementSource(video);
+    const dest = audioCtx.createMediaStreamDestination();
+    source.connect(dest);
+    source.connect(audioCtx.destination);
+
+    video.play();
+
+    const mediaRecorder = new MediaRecorder(dest.stream);
+    let chunks = [];
+
+    mediaRecorder.ondataavailable = e => chunks.push(e.data);
+    mediaRecorder.onstop = () => {
+        const blob = new Blob(chunks, { type: "audio/mp3" });
+        const url = URL.createObjectURL(blob);
+        const a = document.getElementById("download");
+        a.href = url;
+        a.download = "audio.mp3";
+        a.style.display = "block";
+    };
+
+    mediaRecorder.start();
+
+    video.onended = () => {
+        mediaRecorder.stop();
+        audioCtx.close();
+    };
+}
+</script>
+
 </body>
 </html>

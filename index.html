@@ -2,106 +2,131 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Video to Audio Converter</title>
+<title>WhatsApp Style Chat</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
 <style>
-    body{
-        font-family: Arial, sans-serif;
-        background: #0f172a;
-        color: white;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        height: 100vh;
-        margin: 0;
-    }
-    .box{
-        background: #020617;
-        padding: 25px;
-        border-radius: 12px;
-        width: 320px;
-        text-align: center;
-        box-shadow: 0 0 15px #000;
-    }
-    h2{
-        margin-bottom: 15px;
-    }
-    input{
-        width: 100%;
-        margin-bottom: 15px;
-    }
-    button{
-        width: 100%;
-        padding: 12px;
-        border: none;
-        border-radius: 8px;
-        background: #22c55e;
-        color: black;
-        font-size: 16px;
-        font-weight: bold;
-        cursor: pointer;
-    }
-    button:hover{
-        background: #16a34a;
-    }
-    a{
-        display: none;
-        margin-top: 15px;
-        color: #38bdf8;
-        font-weight: bold;
-        text-decoration: none;
-    }
+body{
+  margin:0;
+  font-family: Arial, sans-serif;
+  background:#0f172a;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  height:100vh;
+}
+.chat-box{
+  width:100%;
+  max-width:420px;
+  height:92vh;
+  background:#e5ddd5;
+  display:flex;
+  flex-direction:column;
+}
+.header{
+  background:#075e54;
+  color:white;
+  padding:14px;
+  text-align:center;
+  font-size:18px;
+}
+.messages{
+  flex:1;
+  padding:10px;
+  overflow-y:auto;
+}
+.msg{
+  max-width:75%;
+  padding:8px 12px;
+  margin:6px 0;
+  border-radius:10px;
+  font-size:14px;
+}
+.you{
+  background:#dcf8c6;
+  margin-left:auto;
+}
+.other{
+  background:white;
+  margin-right:auto;
+}
+.input-area{
+  display:flex;
+  padding:10px;
+  background:#f0f0f0;
+}
+input{
+  flex:1;
+  padding:10px;
+  border:none;
+  border-radius:20px;
+  outline:none;
+}
+button{
+  margin-left:8px;
+  padding:10px 14px;
+  border:none;
+  border-radius:50%;
+  background:#075e54;
+  color:white;
+  font-size:16px;
+}
 </style>
 </head>
+
 <body>
 
-<div class="box">
-    <h2>🎥 Video ➜ 🎵 Audio</h2>
-    <input type="file" id="videoInput" accept="video/*">
-    <button onclick="convert()">Convert to MP3</button>
-    <a id="download">⬇ Download Audio</a>
+<div class="chat-box">
+  <div class="header">Online Chat</div>
+
+  <div class="messages" id="messages"></div>
+
+  <div class="input-area">
+    <input type="text" id="msg" placeholder="Type a message">
+    <button onclick="sendMsg()">➤</button>
+  </div>
 </div>
 
 <script>
-async function convert(){
-    const file = document.getElementById("videoInput").files[0];
-    if(!file){
-        alert("Please select a video file");
-        return;
-    }
+// 🔴 YAHAN APNA FIREBASE CONFIG PASTE KARO
+var firebaseConfig = {
+  apiKey: "PASTE_HERE",
+  authDomain: "PASTE_HERE",
+  databaseURL: "PASTE_HERE",
+  projectId: "PASTE_HERE"
+};
 
-    const video = document.createElement("video");
-    video.src = URL.createObjectURL(file);
-    video.crossOrigin = "anonymous";
+firebase.initializeApp(firebaseConfig);
+var db = firebase.database();
 
-    const audioCtx = new AudioContext();
-    const source = audioCtx.createMediaElementSource(video);
-    const dest = audioCtx.createMediaStreamDestination();
-    source.connect(dest);
-    source.connect(audioCtx.destination);
+// random username
+var user = "User" + Math.floor(Math.random()*1000);
 
-    video.play();
+function sendMsg(){
+  var text = document.getElementById("msg").value.trim();
+  if(text==="") return;
 
-    const mediaRecorder = new MediaRecorder(dest.stream);
-    let chunks = [];
+  db.ref("chat").push({
+    name: user,
+    message: text
+  });
 
-    mediaRecorder.ondataavailable = e => chunks.push(e.data);
-    mediaRecorder.onstop = () => {
-        const blob = new Blob(chunks, { type: "audio/mp3" });
-        const url = URL.createObjectURL(blob);
-        const a = document.getElementById("download");
-        a.href = url;
-        a.download = "audio.mp3";
-        a.style.display = "block";
-    };
-
-    mediaRecorder.start();
-
-    video.onended = () => {
-        mediaRecorder.stop();
-        audioCtx.close();
-    };
+  document.getElementById("msg").value = "";
 }
+
+db.ref("chat").on("child_added", function(snapshot){
+  var data = snapshot.val();
+  var div = document.createElement("div");
+
+  div.className = "msg " + (data.name === user ? "you" : "other");
+  div.innerText = data.name + ": " + data.message;
+
+  document.getElementById("messages").appendChild(div);
+});
 </script>
 
 </body>

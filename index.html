@@ -1,172 +1,153 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Mini Instagram</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ultimate SlowMo Editor</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <style>
-    body{
-      font-family: Arial;
-      background:#fafafa;
-      margin:0;
-      display:flex;
-      justify-content:center;
-    }
+<style>
+body{
+margin:0;
+font-family:Arial;
+background:linear-gradient(135deg,#667eea,#764ba2);
+display:flex;
+justify-content:center;
+align-items:center;
+height:100vh;
+}
 
-    .container{
-      width:400px;
-      padding:20px;
-    }
+.card{
+background:white;
+padding:20px;
+border-radius:15px;
+width:360px;
+box-shadow:0 10px 25px rgba(0,0,0,0.2);
+text-align:center;
+}
 
-    .card{
-      background:white;
-      padding:15px;
-      border-radius:10px;
-      box-shadow:0 2px 5px rgba(0,0,0,0.1);
-      margin-bottom:20px;
-    }
+video{
+width:100%;
+border-radius:10px;
+margin-top:10px;
+}
 
-    .post-img{
-      width:100%;
-      border-radius:10px;
-    }
+button,input{
+width:100%;
+padding:10px;
+margin-top:10px;
+border-radius:8px;
+border:1px solid #ddd;
+}
 
-    .like{
-      cursor:pointer;
-      font-size:18px;
-    }
-
-    input,button{
-      width:100%;
-      padding:8px;
-      margin-bottom:10px;
-      border-radius:5px;
-      border:1px solid #ccc;
-    }
-
-    button{
-      background:#0095f6;
-      color:white;
-      border:none;
-    }
-
-  </style>
+button{
+background:#667eea;
+color:white;
+border:none;
+font-weight:bold;
+cursor:pointer;
+}
+</style>
 </head>
 
 <body>
 
-<div class="container">
+<div class="card">
+<h2>Ultimate SlowMo Editor 🎬</h2>
 
-<h2>Mini Instagram 🚀</h2>
+<input type="file" id="videoInput" accept="video/*">
+<video id="video" controls loop></video>
 
-<input type="text" id="username" placeholder="Username">
-<input type="email" id="email" placeholder="Email">
-<input type="password" id="password" placeholder="Password">
+<label>Speed</label>
+<input type="range" id="speed" min="0.25" max="1" step="0.25" value="0.5">
 
-<button onclick="signup()">Sign Up</button>
-<button onclick="login()">Login</button>
+<button onclick="setSpeed(0.25)">0.25x</button>
+<button onclick="setSpeed(0.5)">0.5x</button>
+<button onclick="setSpeed(0.75)">0.75x</button>
 
-<hr>
+<label>Trim Start</label>
+<input type="range" id="start" min="0" max="100" value="0">
 
-<input type="file" id="fileInput">
-<input type="text" id="caption" placeholder="Write a caption...">
-<button onclick="uploadImage()">Upload</button>
+<label>Trim End</label>
+<input type="range" id="end" min="0" max="100" value="100">
 
-<hr>
-
-<div id="gallery"></div>
-
+<button onclick="exportSlow()">Export MP4</button>
 </div>
 
-<script type="module">
+<script>
+const video=document.getElementById("video");
+const input=document.getElementById("videoInput");
+const speed=document.getElementById("speed");
+const start=document.getElementById("start");
+const end=document.getElementById("end");
 
-// Firebase
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword }
-from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyDcZnUuqjD7lDHLj65V-f3E75w4DsSFQ1s",
-  authDomain: "mini-instagram-2.firebaseapp.com",
-  projectId: "mini-instagram-2",
-};
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-
-// Supabase
-import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
-
-const supabaseUrl = "https://hotvdwvahuotmkrzqlvw.supabase.co";
-const supabaseKey = "sb_publishable_Tpu98ldCavcAtSbMDKmm4Q_3P4JWGdj";
-
-const supabase = createClient(supabaseUrl, supabaseKey);
-
-// Sign Up
-window.signup = async function(){
-  const email = email.value;
-  const password = password.value;
-  const usernameValue = username.value;
-
-  await createUserWithEmailAndPassword(auth, email, password);
-
-  localStorage.setItem("username", usernameValue);
-
-  alert("Account Created ✅");
+input.onchange=e=>{
+video.src=URL.createObjectURL(e.target.files[0]);
 }
 
-// Login
-window.login = async function(){
-  const emailValue = email.value;
-  const passwordValue = password.value;
+speed.oninput=()=> video.playbackRate=speed.value;
 
-  await signInWithEmailAndPassword(auth, emailValue, passwordValue);
-
-  alert("Login Success ✅");
+function setSpeed(v){
+video.playbackRate=v;
+speed.value=v;
 }
 
-// Upload Image
-window.uploadImage = async function(){
+// trim playback preview
+video.addEventListener("timeupdate",()=>{
+if(video.duration){
+const endTime=(end.value/100)*video.duration;
+if(video.currentTime>=endTime) video.pause();
+}
+});
 
-  const file = document.getElementById("fileInput").files[0];
-  const captionValue = document.getElementById("caption").value;
-  const usernameValue = localStorage.getItem("username");
+async function exportSlow(){
+const canvas=document.createElement("canvas");
+const ctx=canvas.getContext("2d");
 
-  if(!file){
-    alert("Select file");
-    return;
-  }
+canvas.width=video.videoWidth;
+canvas.height=video.videoHeight;
 
-  const fileName = Date.now() + "-" + file.name;
+const stream=canvas.captureStream(60);
+const recorder=new MediaRecorder(stream);
+let chunks=[];
 
-  await supabase.storage
-    .from("images")
-    .upload(fileName, file);
-
-  const { data } = supabase
-    .storage
-    .from("images")
-    .getPublicUrl(fileName);
-
-  const imageUrl = data.publicUrl;
-
-  document.getElementById("gallery").innerHTML += `
-    <div class="card">
-      <strong>@${usernameValue}</strong>
-      <img src="${imageUrl}" class="post-img">
-      <p>${captionValue}</p>
-      <span class="like" onclick="likePost(this)">❤️ 0</span>
-    </div>
-  `;
+recorder.ondataavailable=e=>chunks.push(e.data);
+recorder.onstop=e=>{
+const blob=new Blob(chunks,{type:"video/webm"});
+const a=document.createElement("a");
+a.href=URL.createObjectURL(blob);
+a.download="slowmo.mp4"; // mp4 rename trick
+a.click();
 }
 
-// Like system
-window.likePost = function(el){
-  let count = parseInt(el.innerText.split(" ")[1]);
-  count++;
-  el.innerText = "❤️ " + count;
-}
+recorder.start();
 
+video.currentTime=(start.value/100)*video.duration;
+video.play();
+
+let lastFrame=null;
+
+function draw(){
+ctx.globalAlpha=0.5;
+if(lastFrame) ctx.drawImage(lastFrame,0,0,canvas.width,canvas.height);
+
+ctx.globalAlpha=0.85;
+ctx.drawImage(video,0,0,canvas.width,canvas.height);
+ctx.globalAlpha=1;
+
+lastFrame=document.createElement("canvas");
+lastFrame.width=canvas.width;
+lastFrame.height=canvas.height;
+lastFrame.getContext("2d").drawImage(canvas,0,0);
+
+const endTime=(end.value/100)*video.duration;
+
+if(!video.paused && !video.ended && video.currentTime<endTime){
+setTimeout(()=>requestAnimationFrame(draw),1000/60);
+}else{
+recorder.stop();
+}
+}
+draw();
+}
 </script>
 
 </body>

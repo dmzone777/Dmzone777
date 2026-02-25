@@ -16,7 +16,6 @@ button{margin-top:8px;padding:10px;width:100%;border:none;border-radius:8px;back
 .listen{background:#1e90ff;}
 .control{background:#2ed573;}
 .like{background:#ffa502;}
-.commentBox{margin-top:8px;}
 small{display:block;margin-top:4px;color:#666;}
 </style>
 </head>
@@ -44,7 +43,6 @@ small{display:block;margin-top:4px;color:#666;}
 <input id="title" placeholder="Story title">
 <textarea id="text" rows="3" placeholder="Write story"></textarea>
 <button onclick="addStory()">Upload</button>
-
 <button class="control" onclick="readAll()">📖 Auto Read All</button>
 
 <div id="stories"></div>
@@ -73,6 +71,7 @@ const userRef=collection(db,"users");
 const storyRef=collection(db,"stories");
 
 let currentUser=localStorage.getItem("user");
+
 const loginBox=document.getElementById("loginBox");
 const appBox=document.getElementById("app");
 const stories=document.getElementById("stories");
@@ -87,23 +86,23 @@ appBox.style.display="block";
 loadStories();
 }
 
+/* signup */
 window.signup=async()=>{
-let n=name.value,p=pass.value;
-if(!n||!p)return alert("Fill fields");
-let q=query(userRef,where("name","==",n));
+if(!name.value||!pass.value) return alert("Fill fields");
+let q=query(userRef,where("name","==",name.value));
 let snap=await getDocs(q);
-if(!snap.empty)return alert("Username exists");
-await addDoc(userRef,{name:n,pass:hash(p)});
+if(!snap.empty) return alert("Username exists");
+await addDoc(userRef,{name:name.value,pass:hash(pass.value)});
 alert("Signup success");
 };
 
+/* login */
 window.login=async()=>{
-let n=name.value,p=pass.value;
-let q=query(userRef,where("name","==",n),where("pass","==",hash(p)));
+let q=query(userRef,where("name","==",name.value),where("pass","==",hash(pass.value)));
 let snap=await getDocs(q);
-if(snap.empty)return alert("Wrong login");
-currentUser=n;
-localStorage.setItem("user",n);
+if(snap.empty) return alert("Wrong login");
+currentUser=name.value;
+localStorage.setItem("user",currentUser);
 loginBox.style.display="none";
 appBox.style.display="block";
 loadStories();
@@ -111,52 +110,52 @@ loadStories();
 
 window.logout=()=>{localStorage.removeItem("user");location.reload();};
 
+/* add story */
 window.addStory=async()=>{
-if(!title.value||!text.value)return;
+if(!title.value||!text.value) return;
 await addDoc(storyRef,{title:title.value,text:text.value,user:currentUser,time:Date.now(),likes:0});
 title.value="";text.value="";
 };
 
+/* delete */
 window.del=async(id,user)=>{
-if(user!==currentUser)return alert("Only your story");
+if(user!==currentUser) return alert("Only your story");
 await deleteDoc(doc(db,"stories",id));
 };
 
+/* like */
 window.like=async(id)=>{
 await updateDoc(doc(db,"stories",id),{likes:increment(1)});
 };
 
+/* voices */
 let voices=[];
 function loadVoices(){
 voices=speechSynthesis.getVoices();
 voiceSelect.innerHTML="";
-voices.forEach((v,i)=>{
-voiceSelect.innerHTML+=`<option value="${i}">${v.name}</option>`;
-});
+voices.forEach((v,i)=>voiceSelect.innerHTML+=`<option value="${i}">${v.name}</option>`);
 }
 speechSynthesis.onvoiceschanged=loadVoices;
 loadVoices();
 
-let currentSpeech=null;
-
+/* speech controls */
 window.speakStory=(title,text)=>{
-window.speechSynthesis.cancel();
+speechSynthesis.cancel();
 let msg=new SpeechSynthesisUtterance(title+". "+text);
 msg.lang=langSelect.value;
 msg.voice=voices[voiceSelect.value];
-currentSpeech=msg;
 speechSynthesis.speak(msg);
 };
-
 window.pauseSpeech=()=>speechSynthesis.pause();
 window.resumeSpeech=()=>speechSynthesis.resume();
 window.stopSpeech=()=>speechSynthesis.cancel();
 
+/* auto read */
 window.readAll=()=>{
 const all=document.querySelectorAll(".story");
 let i=0;
 function next(){
-if(i>=all.length)return;
+if(i>=all.length) return;
 let t=all[i].querySelector("h3").innerText;
 let p=all[i].querySelector("p").innerText;
 let msg=new SpeechSynthesisUtterance(t+". "+p);
@@ -168,6 +167,7 @@ speechSynthesis.speak(msg);
 next();
 };
 
+/* load stories */
 function loadStories(){
 const q=query(storyRef,orderBy("time","desc"));
 onSnapshot(q,(snap)=>{
@@ -181,13 +181,13 @@ stories.innerHTML+=`
 <small>by ${s.user}</small>
 <small>❤️ ${s.likes||0}</small>
 
-<button class="listen" onclick="speakStory('${s.title}','${s.text}')">🔊 Listen</button>
+<button class="listen" onclick='speakStory(${JSON.stringify(s.title)},${JSON.stringify(s.text)})'>🔊 Listen</button>
 <button onclick="pauseSpeech()">⏸ Pause</button>
 <button onclick="resumeSpeech()">▶ Resume</button>
 <button onclick="stopSpeech()">⏹ Stop</button>
 <button class="like" onclick="like('${d.id}')">❤️ Like</button>
 
-${s.user===currentUser?`<button class="delete" onclick="del('${d.id}','${s.user}')">Delete</button>`:``}
+${s.user===currentUser?`<button class="delete" onclick="del('${d.id}','${s.user}')">Delete</button>`:""}
 </div>`;
 });
 });

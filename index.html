@@ -12,6 +12,7 @@ input,textarea{width:100%;padding:12px;margin-top:10px;border-radius:10px;border
 button{margin-top:10px;padding:12px;width:100%;border:none;border-radius:10px;background:#ff6b81;color:#fff;font-size:16px;}
 .story{background:#fff;padding:12px;margin-top:15px;border-radius:10px;box-shadow:0 5px 10px rgba(0,0,0,.1);}
 .delete{background:#ff4757;margin-top:8px;}
+.logout{background:#333;margin-bottom:10px;}
 </style>
 </head>
 
@@ -26,6 +27,7 @@ button{margin-top:10px;padding:12px;width:100%;border:none;border-radius:10px;ba
 </div>
 
 <div class="box" id="app" style="display:none">
+<button class="logout" onclick="logout()">Logout</button>
 <h2>Story Hub</h2>
 <input id="title" placeholder="Story title">
 <textarea id="text" rows="4" placeholder="Write story"></textarea>
@@ -40,7 +42,6 @@ getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot,
 query, orderBy, getDocs, where
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-/* tumhara config */
 const firebaseConfig={
 apiKey:"AIzaSyAtJzjzNsBvMVj6bOfByWzX21hxSAyLYVQ",
 authDomain:"mini-instagram-95485.firebaseapp.com",
@@ -50,40 +51,69 @@ messagingSenderId:"426906615408",
 appId:"1:426906615408:web:1ba85f1d00b9c09e083eb5"
 };
 
-const app=initializeApp(firebaseConfig);
-const db=getFirestore(app);
+const appFirebase=initializeApp(firebaseConfig);
+const db=getFirestore(appFirebase);
 
 const userRef=collection(db,"users");
 const storyRef=collection(db,"stories");
 
-let currentUser=null;
+const loginBox=document.getElementById("loginBox");
+const appBox=document.getElementById("app");
+const nameEl=document.getElementById("name");
+const passEl=document.getElementById("pass");
+const stories=document.getElementById("stories");
+
+let currentUser=localStorage.getItem("user");
+
+/* simple hash */
+function hash(p){return btoa(p);}
+
+/* auto login */
+if(currentUser){
+loginBox.style.display="none";
+appBox.style.display="block";
+loadStories();
+}
 
 /* signup */
 window.signup=async function(){
-let name=nameEl.value;
-let pass=passEl.value;
-await addDoc(userRef,{name,pass});
+if(!nameEl.value||!passEl.value) return alert("Fill fields");
+
+let q=query(userRef,where("name","==",nameEl.value));
+let snap=await getDocs(q);
+if(!snap.empty) return alert("Username exists");
+
+await addDoc(userRef,{name:nameEl.value,pass:hash(passEl.value)});
 alert("Signup success");
 }
 
 /* login */
-const nameEl=document.getElementById("name");
-const passEl=document.getElementById("pass");
-
 window.login=async function(){
-let q=query(userRef,where("name","==",nameEl.value),where("pass","==",passEl.value));
+let q=query(userRef,
+where("name","==",nameEl.value),
+where("pass","==",hash(passEl.value))
+);
 let snap=await getDocs(q);
 
 if(snap.empty) return alert("Wrong login");
 
 currentUser=nameEl.value;
+localStorage.setItem("user",currentUser);
+
 loginBox.style.display="none";
-app.style.display="block";
+appBox.style.display="block";
 loadStories();
+}
+
+/* logout */
+window.logout=function(){
+localStorage.removeItem("user");
+location.reload();
 }
 
 /* add story */
 window.addStory=async function(){
+if(!title.value||!text.value) return;
 await addDoc(storyRef,{
 title:title.value,
 text:text.value,
@@ -94,8 +124,9 @@ title.value="";
 text.value="";
 }
 
-/* delete */
-window.del=async function(id){
+/* delete own */
+window.del=async function(id,user){
+if(user!==currentUser) return alert("Only your story");
 await deleteDoc(doc(db,"stories",id));
 }
 
@@ -111,7 +142,7 @@ stories.innerHTML+=`
 <h3>${s.title}</h3>
 <p>${s.text}</p>
 <small>by ${s.user}</small>
-<button class="delete" onclick="del('${d.id}')">Delete</button>
+${s.user===currentUser ? `<button class="delete" onclick="del('${d.id}','${s.user}')">Delete</button>` : ``}
 </div>`;
 });
 });

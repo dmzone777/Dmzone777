@@ -2,74 +2,82 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>GLB Compressor</title>
-
-<script type="module">
-import { WebIO } from 'https://cdn.jsdelivr.net/npm/@gltf-transform/core@3.10.0/dist/web.js';
-import { textureResize, dedup, prune } from 'https://cdn.jsdelivr.net/npm/@gltf-transform/functions@3.10.0/dist/functions.js';
-
-window.compress = async function () {
-
-const file = document.getElementById("file").files[0];
-if(!file) return alert("Upload GLB first");
-
-const io = new WebIO();
-const arrayBuffer = await file.arrayBuffer();
-
-const doc = await io.readBinary(new Uint8Array(arrayBuffer));
-
-await doc.transform(
-dedup(),
-prune(),
-textureResize({ size: [1024,1024] }) // texture resize = size reduce
-);
-
-const optimized = await io.writeBinary(doc);
-const blob = new Blob([optimized],{type:"model/gltf-binary"});
-const url = URL.createObjectURL(blob);
-
-const link = document.getElementById("download");
-link.href = url;
-link.style.display="block";
-}
-</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Firebase Story Hub</title>
 
 <style>
-body{
-background:#111;
-color:white;
-font-family:sans-serif;
-text-align:center;
-padding:20px;
-}
-input,button,a{
-margin:10px;
-padding:10px;
-border-radius:10px;
-border:none;
-}
-button{
-background:#00ffcc;
-cursor:pointer;
-}
-a{
-background:#ffcc00;
-color:black;
-text-decoration:none;
-display:none;
-}
+body{margin:0;font-family:Segoe UI;background:#f2f2f2;display:flex;flex-direction:column;align-items:center;}
+header{width:100%;padding:15px;background:#ff6b81;color:#fff;text-align:center;font-size:22px;}
+.container{width:95%;max-width:500px;margin-top:15px;}
+input,textarea{width:100%;padding:12px;margin-top:10px;border-radius:10px;border:1px solid #ccc;}
+button{margin-top:10px;padding:12px;width:100%;border:none;border-radius:10px;background:#ff6b81;color:#fff;font-size:16px;}
+.story{background:#fff;padding:12px;margin-top:15px;border-radius:10px;box-shadow:0 5px 10px rgba(0,0,0,.1);}
+.delete{background:#ff4757;margin-top:8px;}
 </style>
 </head>
 
 <body>
 
-<h2>🔥 GLB File Size Reducer</h2>
+<header>🔥 Firebase Story Hub</header>
 
-<input type="file" id="file" accept=".glb">
-<br>
-<button onclick="compress()">Compress</button>
-<br>
-<a id="download" download="optimized.glb">Download Optimized GLB</a>
+<div class="container">
+<input id="title" placeholder="Story title">
+<textarea id="text" rows="5" placeholder="Write story here..."></textarea>
+<button onclick="addStory()">Upload Story</button>
+<div id="stories"></div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot, query, orderBy
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+/* 🔥 TUMHARA CONFIG */
+const firebaseConfig = {
+apiKey: "AIzaSyAtJzjzNsBvMVj6bOfByWzX21hxSAyLYVQ",
+authDomain: "mini-instagram-95485.firebaseapp.com",
+projectId: "mini-instagram-95485",
+storageBucket: "mini-instagram-95485.firebasestorage.app",
+messagingSenderId: "426906615408",
+appId: "1:426906615408:web:1ba85f1d00b9c09e083eb5",
+measurementId: "G-V8E6NEGGZD"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const colRef = collection(db,"stories");
+
+window.addStory = async function(){
+let title=document.getElementById("title").value;
+let text=document.getElementById("text").value;
+if(!title||!text) return alert("Fill all fields");
+
+await addDoc(colRef,{title,text,time:Date.now()});
+document.getElementById("title").value="";
+document.getElementById("text").value="";
+}
+
+window.del = async function(id){
+await deleteDoc(doc(db,"stories",id));
+}
+
+const q=query(colRef,orderBy("time","desc"));
+
+onSnapshot(q,(snap)=>{
+let box=document.getElementById("stories");
+box.innerHTML="";
+snap.forEach(d=>{
+let s=d.data();
+box.innerHTML+=`
+<div class="story">
+<h3>${s.title}</h3>
+<p>${s.text}</p>
+<button class="delete" onclick="del('${d.id}')">Delete</button>
+</div>`;
+});
+});
+</script>
 
 </body>
 </html>

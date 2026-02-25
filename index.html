@@ -3,12 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Firebase Story Hub</title>
+<title>Story Login</title>
 
 <style>
-body{margin:0;font-family:Segoe UI;background:#f2f2f2;display:flex;flex-direction:column;align-items:center;}
-header{width:100%;padding:15px;background:#ff6b81;color:#fff;text-align:center;font-size:22px;}
-.container{width:95%;max-width:500px;margin-top:15px;}
+body{margin:0;font-family:Segoe UI;background:#f2f2f2;display:flex;justify-content:center;align-items:center;height:100vh;}
+.box{width:95%;max-width:400px;background:#fff;padding:20px;border-radius:12px;box-shadow:0 5px 10px rgba(0,0,0,.1);}
 input,textarea{width:100%;padding:12px;margin-top:10px;border-radius:10px;border:1px solid #ccc;}
 button{margin-top:10px;padding:12px;width:100%;border:none;border-radius:10px;background:#ff6b81;color:#fff;font-size:16px;}
 .story{background:#fff;padding:12px;margin-top:15px;border-radius:10px;box-shadow:0 5px 10px rgba(0,0,0,.1);}
@@ -18,65 +17,105 @@ button{margin-top:10px;padding:12px;width:100%;border:none;border-radius:10px;ba
 
 <body>
 
-<header>🔥 Firebase Story Hub</header>
+<div class="box" id="loginBox">
+<h2>Login / Signup</h2>
+<input id="name" placeholder="Name">
+<input id="pass" placeholder="Password" type="password">
+<button onclick="signup()">Signup</button>
+<button onclick="login()">Login</button>
+</div>
 
-<div class="container">
+<div class="box" id="app" style="display:none">
+<h2>Story Hub</h2>
 <input id="title" placeholder="Story title">
-<textarea id="text" rows="5" placeholder="Write story here..."></textarea>
-<button onclick="addStory()">Upload Story</button>
+<textarea id="text" rows="4" placeholder="Write story"></textarea>
+<button onclick="addStory()">Upload</button>
 <div id="stories"></div>
 </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
-getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot, query, orderBy
+getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot,
+query, orderBy, getDocs, where
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-/* 🔥 TUMHARA CONFIG */
-const firebaseConfig = {
-apiKey: "AIzaSyAtJzjzNsBvMVj6bOfByWzX21hxSAyLYVQ",
-authDomain: "mini-instagram-95485.firebaseapp.com",
-projectId: "mini-instagram-95485",
-storageBucket: "mini-instagram-95485.firebasestorage.app",
-messagingSenderId: "426906615408",
-appId: "1:426906615408:web:1ba85f1d00b9c09e083eb5",
-measurementId: "G-V8E6NEGGZD"
+/* tumhara config */
+const firebaseConfig={
+apiKey:"AIzaSyAtJzjzNsBvMVj6bOfByWzX21hxSAyLYVQ",
+authDomain:"mini-instagram-95485.firebaseapp.com",
+projectId:"mini-instagram-95485",
+storageBucket:"mini-instagram-95485.firebasestorage.app",
+messagingSenderId:"426906615408",
+appId:"1:426906615408:web:1ba85f1d00b9c09e083eb5"
 };
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const colRef = collection(db,"stories");
+const app=initializeApp(firebaseConfig);
+const db=getFirestore(app);
 
-window.addStory = async function(){
-let title=document.getElementById("title").value;
-let text=document.getElementById("text").value;
-if(!title||!text) return alert("Fill all fields");
+const userRef=collection(db,"users");
+const storyRef=collection(db,"stories");
 
-await addDoc(colRef,{title,text,time:Date.now()});
-document.getElementById("title").value="";
-document.getElementById("text").value="";
+let currentUser=null;
+
+/* signup */
+window.signup=async function(){
+let name=nameEl.value;
+let pass=passEl.value;
+await addDoc(userRef,{name,pass});
+alert("Signup success");
 }
 
-window.del = async function(id){
+/* login */
+const nameEl=document.getElementById("name");
+const passEl=document.getElementById("pass");
+
+window.login=async function(){
+let q=query(userRef,where("name","==",nameEl.value),where("pass","==",passEl.value));
+let snap=await getDocs(q);
+
+if(snap.empty) return alert("Wrong login");
+
+currentUser=nameEl.value;
+loginBox.style.display="none";
+app.style.display="block";
+loadStories();
+}
+
+/* add story */
+window.addStory=async function(){
+await addDoc(storyRef,{
+title:title.value,
+text:text.value,
+user:currentUser,
+time:Date.now()
+});
+title.value="";
+text.value="";
+}
+
+/* delete */
+window.del=async function(id){
 await deleteDoc(doc(db,"stories",id));
 }
 
-const q=query(colRef,orderBy("time","desc"));
-
+/* load stories */
+function loadStories(){
+const q=query(storyRef,orderBy("time","desc"));
 onSnapshot(q,(snap)=>{
-let box=document.getElementById("stories");
-box.innerHTML="";
+stories.innerHTML="";
 snap.forEach(d=>{
 let s=d.data();
-box.innerHTML+=`
+stories.innerHTML+=`
 <div class="story">
 <h3>${s.title}</h3>
 <p>${s.text}</p>
+<small>by ${s.user}</small>
 <button class="delete" onclick="del('${d.id}')">Delete</button>
 </div>`;
 });
 });
+}
 </script>
 
 </body>

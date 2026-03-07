@@ -2,126 +2,243 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Free 3D Models</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ultimate Music Web App</title>
 
 <style>
 
 body{
-font-family:Arial;
 margin:0;
-background:#f5f5f5;
-}
-
-header{
-background:#111;
+font-family:Arial;
+background:#0f0f0f;
 color:white;
-padding:15px;
+display:flex;
+justify-content:center;
+align-items:center;
+height:100vh;
+}
+
+.player{
+background:#1a1a1a;
+padding:20px;
+border-radius:15px;
+width:320px;
+box-shadow:0 0 15px black;
+}
+
+h2{
 text-align:center;
 }
 
-.search{
-text-align:center;
-margin:20px;
-}
-
-.search input{
-padding:10px;
-width:80%;
-max-width:400px;
-border-radius:8px;
-border:1px solid #ccc;
-}
-
-.upload{
-text-align:center;
-margin:20px;
-}
-
-.upload button{
-padding:12px 20px;
+button{
+padding:8px 12px;
+margin:5px;
 border:none;
-background:#4CAF50;
+border-radius:6px;
+background:#ff2e63;
 color:white;
-font-size:16px;
-border-radius:8px;
 cursor:pointer;
 }
 
-.container{
-display:flex;
-flex-wrap:wrap;
-justify-content:center;
+button:hover{
+background:#ff0040;
 }
 
-.card{
-background:white;
-width:220px;
-margin:15px;
-border-radius:10px;
-box-shadow:0 2px 10px rgba(0,0,0,0.2);
-overflow:hidden;
-text-align:center;
+input[type="file"]{
+margin:10px 0;
 }
 
-.card img{
+#playlist{
+margin-top:10px;
+max-height:120px;
+overflow:auto;
+background:#111;
+padding:5px;
+border-radius:8px;
+}
+
+.song{
+padding:6px;
+border-bottom:1px solid #333;
+cursor:pointer;
+}
+
+.song:hover{
+background:#222;
+}
+
+progress{
 width:100%;
-height:150px;
-object-fit:cover;
-}
-
-.card h3{
-margin:10px;
-}
-
-.card a{
-display:block;
-background:#2196F3;
-color:white;
-padding:10px;
-text-decoration:none;
+margin-top:10px;
 }
 
 </style>
+
 </head>
 
 <body>
 
-<header>
-<h1>Free 3D Models</h1>
-</header>
+<div class="player">
 
-<div class="search">
-<input type="text" placeholder="Search 3D models...">
-</div>
+<h2>🎵 My Music</h2>
 
-<div class="upload">
-<a href="https://docs.google.com/forms/d/e/1FAIpQLSciVgmzzOc6IlQHEcgBqxoDKnghxcnf4xHIL5qm8q03hufOpw/viewform?usp=publish-editor" target="_blank">
-<button>Upload Your 3D Model</button>
-</a>
-</div>
+<input type="file" id="fileInput" accept="audio/*" multiple>
 
-<div class="container">
+<div>
 
-<div class="card">
-<img src="https://via.placeholder.com/300x200">
-<h3>Low Poly Tree</h3>
-<a href="#">Download</a>
-</div>
-
-<div class="card">
-<img src="https://via.placeholder.com/300x200">
-<h3>Simple House</h3>
-<a href="#">Download</a>
-</div>
-
-<div class="card">
-<img src="https://via.placeholder.com/300x200">
-<h3>Game Rock</h3>
-<a href="#">Download</a>
-</div>
+<button onclick="prevSong()">⏮</button>
+<button onclick="playMusic()">▶</button>
+<button onclick="pauseMusic()">⏸</button>
+<button onclick="nextSong()">⏭</button>
 
 </div>
+
+<br>
+
+<label>Volume</label>
+<input type="range" id="volume" min="0" max="1" step="0.01" value="1">
+
+<progress id="progressBar" value="0" max="100"></progress>
+
+<div id="playlist"></div>
+
+<audio id="audio"></audio>
+
+</div>
+
+<script>
+
+let audio=document.getElementById("audio")
+let playlist=[]
+let current=0
+
+let saved=localStorage.getItem("songs")
+
+if(saved){
+playlist=JSON.parse(saved)
+}
+
+function render(){
+
+let box=document.getElementById("playlist")
+box.innerHTML=""
+
+playlist.forEach((song,i)=>{
+
+let div=document.createElement("div")
+div.className="song"
+div.innerText=song.name
+
+div.onclick=function(){
+
+current=i
+playSong()
+
+}
+
+box.appendChild(div)
+
+})
+
+}
+
+render()
+
+document.getElementById("fileInput").addEventListener("change",function(){
+
+let files=this.files
+
+for(let file of files){
+
+let reader=new FileReader()
+
+reader.onload=function(e){
+
+playlist.push({
+name:file.name,
+src:e.target.result
+})
+
+localStorage.setItem("songs",JSON.stringify(playlist))
+
+render()
+
+}
+
+reader.readAsDataURL(file)
+
+}
+
+})
+
+function playSong(){
+
+audio.src=playlist[current].src
+audio.play()
+
+}
+
+function playMusic(){
+
+audio.play()
+
+}
+
+function pauseMusic(){
+
+audio.pause()
+
+}
+
+function nextSong(){
+
+current++
+
+if(current>=playlist.length) current=0
+
+playSong()
+
+}
+
+function prevSong(){
+
+current--
+
+if(current<0) current=playlist.length-1
+
+playSong()
+
+}
+
+audio.ontimeupdate=function(){
+
+let progress=(audio.currentTime/audio.duration)*100
+
+document.getElementById("progressBar").value=progress
+
+}
+
+document.getElementById("volume").oninput=function(){
+
+audio.volume=this.value
+
+}
+
+/* background media control */
+
+if('mediaSession' in navigator){
+
+navigator.mediaSession.setActionHandler('play',()=>audio.play())
+
+navigator.mediaSession.setActionHandler('pause',()=>audio.pause())
+
+navigator.mediaSession.setActionHandler('nexttrack',nextSong)
+
+navigator.mediaSession.setActionHandler('previoustrack',prevSong)
+
+}
+
+</script>
 
 </body>
 </html>

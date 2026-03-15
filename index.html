@@ -2,13 +2,16 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Ultra GLTF Compressor</title>
+<title>GLTF Compressor</title>
+
+<script src="https://unpkg.com/@gltf-transform/core/dist/index.umd.js"></script>
+<script src="https://unpkg.com/@gltf-transform/functions/dist/index.umd.js"></script>
 
 <style>
 
 body{
 font-family:Arial;
-background:linear-gradient(135deg,#020617,#0f172a);
+background:#0f172a;
 color:white;
 display:flex;
 justify-content:center;
@@ -18,59 +21,76 @@ margin:0;
 }
 
 .card{
-
-width:420px;
-padding:25px;
-
-background:rgba(255,255,255,0.05);
-backdrop-filter:blur(10px);
-
-border-radius:15px;
+width:400px;
+background:#111827;
+padding:20px;
+border-radius:12px;
 text-align:center;
-
-box-shadow:0 0 25px rgba(0,0,0,0.6);
-
-}
-
-h2{
-margin-bottom:15px;
-}
-
-input{
-margin:10px 0;
 }
 
 button{
-
 width:100%;
 padding:12px;
 margin-top:10px;
-
 border:none;
-border-radius:10px;
-
-background:linear-gradient(90deg,#22c55e,#4ade80);
+border-radius:8px;
 font-size:15px;
 cursor:pointer;
-
+background:#22c55e;
 }
 
 #download{
 display:none;
-background:linear-gradient(90deg,#3b82f6,#60a5fa);
+background:#3b82f6;
 }
 
-.stat{
-margin-top:8px;
-font-size:14px;
-color:#94a3b8;
+.modal{
+
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+
+background:rgba(0,0,0,0.7);
+
+display:none;
+align-items:center;
+justify-content:center;
+
+}
+
+.modal-box{
+
+background:#1f2937;
+padding:30px;
+border-radius:10px;
+text-align:center;
+
+}
+
+.loader{
+
+border:5px solid #374151;
+border-top:5px solid #22c55e;
+
+border-radius:50%;
+width:40px;
+height:40px;
+
+animation:spin 1s linear infinite;
+
+margin:auto;
+margin-bottom:10px;
+
+}
+
+@keyframes spin{
+0%{transform:rotate(0deg);}
+100%{transform:rotate(360deg);}
 }
 
 </style>
-
-<script src="https://unpkg.com/@gltf-transform/core/dist/index.umd.js"></script>
-<script src="https://unpkg.com/@gltf-transform/functions/dist/index.umd.js"></script>
-<script src="https://unpkg.com/@gltf-transform/extensions/dist/index.umd.js"></script>
 
 </head>
 
@@ -78,11 +98,11 @@ color:#94a3b8;
 
 <div class="card">
 
-<h2>Ultra GLTF Compressor</h2>
+<h2>GLTF Compressor</h2>
 
 <input type="file" id="file">
 
-<br>
+<br><br>
 
 <label>Texture Size</label>
 
@@ -90,15 +110,26 @@ color:#94a3b8;
 <option value="2048">2048</option>
 <option value="1024">1024</option>
 <option value="512">512</option>
-<option value="256">256</option>
 </select>
 
 <button onclick="compress()">Compress Model</button>
 
-<button id="download" onclick="download()">Download</button>
+<button id="download" onclick="download()">Download Model</button>
 
-<div class="stat" id="before"></div>
-<div class="stat" id="after"></div>
+<p id="before"></p>
+<p id="after"></p>
+
+</div>
+
+<div class="modal" id="modal">
+
+<div class="modal-box">
+
+<div class="loader"></div>
+
+<p>Processing Model...</p>
+
+</div>
 
 </div>
 
@@ -114,9 +145,11 @@ file=e.target.files[0]
 async function compress(){
 
 if(!file){
-alert("Upload model first")
+alert("Upload file first")
 return
 }
+
+document.getElementById("modal").style.display="flex"
 
 const before=(file.size/1024/1024).toFixed(2)
 
@@ -148,6 +181,8 @@ const after=(outputBlob.size/1024/1024).toFixed(2)
 
 document.getElementById("after").innerText=
 "Compressed Size: "+after+" MB"
+
+document.getElementById("modal").style.display="none"
 
 document.getElementById("download").style.display="block"
 

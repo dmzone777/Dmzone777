@@ -1,206 +1,171 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>GLTF Compressor</title>
-
-<script src="https://unpkg.com/@gltf-transform/core/dist/index.umd.js"></script>
-<script src="https://unpkg.com/@gltf-transform/functions/dist/index.umd.js"></script>
+<title>Neon AI Background Remover</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
+    body {
+        margin: 0;
+        padding: 0;
+        background: #05011a;
+        font-family: Poppins, sans-serif;
+        color: white;
+        overflow-x: hidden;
+    }
 
-body{
-font-family:Arial;
-background:#0f172a;
-color:white;
-display:flex;
-justify-content:center;
-align-items:center;
-height:100vh;
-margin:0;
-}
+    h1 {
+        text-align: center;
+        font-size: 32px;
+        margin-top: 20px;
+        text-shadow: 0 0 20px #00f2ff;
+    }
 
-.card{
-width:400px;
-background:#111827;
-padding:20px;
-border-radius:12px;
-text-align:center;
-}
+    .container {
+        max-width: 450px;
+        margin: auto;
+        margin-top: 20px;
+        padding: 20px;
+        border-radius: 15px;
+        background: rgba(0, 0, 40, 0.6);
+        box-shadow: 0 0 20px #00e5ff55;
+        border: 1px solid #0ff5;
+    }
 
-button{
-width:100%;
-padding:12px;
-margin-top:10px;
-border:none;
-border-radius:8px;
-font-size:15px;
-cursor:pointer;
-background:#22c55e;
-}
+    .upload-area {
+        padding: 35px;
+        border: 2px dashed #0ff8;
+        border-radius: 15px;
+        text-align: center;
+        cursor: pointer;
+        transition: 0.3s;
+    }
 
-#download{
-display:none;
-background:#3b82f6;
-}
+    .upload-area:hover {
+        background: rgba(0, 255, 255, 0.1);
+        box-shadow: 0 0 20px #00eaffaa inset;
+    }
 
-.modal{
+    img {
+        width: 100%;
+        border-radius: 10px;
+        margin-top: 15px;
+        display: none;
+    }
 
-position:fixed;
-top:0;
-left:0;
-width:100%;
-height:100%;
+    #progressBox {
+        width: 100%;
+        background: #222;
+        border-radius: 10px;
+        margin-top: 15px;
+        display: none;
+    }
 
-background:rgba(0,0,0,0.7);
+    #progressBar {
+        width: 0%;
+        height: 10px;
+        background: #00f2ff;
+        box-shadow: 0 0 10px #00f2ff;
+        border-radius: 10px;
+    }
 
-display:none;
-align-items:center;
-justify-content:center;
+    .download-buttons {
+        display: none;
+        margin-top: 20px;
+        text-align: center;
+    }
 
-}
+    button {
+        padding: 10px 18px;
+        border: none;
+        margin: 8px;
+        background: #00f2ff;
+        color: #000;
+        border-radius: 8px;
+        font-weight: bold;
+        cursor: pointer;
+        box-shadow: 0 0 15px #00f2ff99;
+        transition: .3s;
+    }
 
-.modal-box{
-
-background:#1f2937;
-padding:30px;
-border-radius:10px;
-text-align:center;
-
-}
-
-.loader{
-
-border:5px solid #374151;
-border-top:5px solid #22c55e;
-
-border-radius:50%;
-width:40px;
-height:40px;
-
-animation:spin 1s linear infinite;
-
-margin:auto;
-margin-bottom:10px;
-
-}
-
-@keyframes spin{
-0%{transform:rotate(0deg);}
-100%{transform:rotate(360deg);}
-}
-
+    button:hover {
+        box-shadow: 0 0 25px #00f2ff;
+    }
 </style>
-
 </head>
 
 <body>
 
-<div class="card">
+<h1>Neon AI Background Remover ⚡</h1>
 
-<h2>GLTF Compressor</h2>
+<div class="container">
+    <div class="upload-area" onclick="fileInput.click()">
+        <p><b>Drop Image / Click to Upload</b></p>
+        <input type="file" id="fileInput" accept="image/*" hidden>
+    </div>
 
-<input type="file" id="file">
+    <img id="inputPreview">
+    <div id="progressBox"><div id="progressBar"></div></div>
+    <img id="outputPreview">
 
-<br><br>
-
-<label>Texture Size</label>
-
-<select id="tex">
-<option value="2048">2048</option>
-<option value="1024">1024</option>
-<option value="512">512</option>
-</select>
-
-<button onclick="compress()">Compress Model</button>
-
-<button id="download" onclick="download()">Download Model</button>
-
-<p id="before"></p>
-<p id="after"></p>
-
-</div>
-
-<div class="modal" id="modal">
-
-<div class="modal-box">
-
-<div class="loader"></div>
-
-<p>Processing Model...</p>
-
-</div>
-
+    <div class="download-buttons">
+        <button onclick="download('png')">Download PNG</button>
+        <button onclick="download('jpg')">Download JPG</button>
+        <button onclick="download('webp')">Download WEBP</button>
+    </div>
 </div>
 
 <script>
+const modelURL = "https://api-inference.huggingface.co/models/briaai/BRIA-RMBG-1.4";
+const input = document.getElementById("fileInput");
+const inputPreview = document.getElementById("inputPreview");
+const outputPreview = document.getElementById("outputPreview");
+const progressBox = document.getElementById("progressBox");
+const progressBar = document.getElementById("progressBar");
+const downloadBox = document.querySelector(".download-buttons");
+let finalBlob;
 
-let file
-let outputBlob
+input.addEventListener("change", async () => {
+    let file = input.files[0];
+    if (!file) return;
 
-document.getElementById("file").onchange=e=>{
-file=e.target.files[0]
+    inputPreview.src = URL.createObjectURL(file);
+    inputPreview.style.display = "block";
+
+    progressBox.style.display = "block";
+    progressBar.style.width = "30%";
+
+    let formData = new FormData();
+    formData.append("file", file);
+
+    progressBar.style.width = "60%";
+
+    let res = await fetch(modelURL, {
+        method: "POST",
+        body: file,
+        headers: { "x-wait-for-model": "true" }
+    });
+
+    progressBar.style.width = "90%";
+
+    let blob = await res.blob();
+    finalBlob = blob;
+
+    outputPreview.src = URL.createObjectURL(blob);
+    outputPreview.style.display = "block";
+
+    progressBar.style.width = "100%";
+
+    downloadBox.style.display = "block";
+});
+
+function download(type) {
+    let a = document.createElement("a");
+    a.download = "bg_removed." + type;
+    a.href = URL.createObjectURL(finalBlob);
+    a.click();
 }
-
-async function compress(){
-
-if(!file){
-alert("Upload file first")
-return
-}
-
-document.getElementById("modal").style.display="flex"
-
-const before=(file.size/1024/1024).toFixed(2)
-
-document.getElementById("before").innerText=
-"Original Size: "+before+" MB"
-
-const buffer=await file.arrayBuffer()
-
-const {NodeIO}=gltfTransformCore
-const {dedup, prune, textureResize}=gltfTransformFunctions
-
-const io=new NodeIO()
-
-const doc=io.readBinary(new Uint8Array(buffer))
-
-const tex=parseInt(document.getElementById("tex").value)
-
-await doc.transform(
-dedup(),
-prune(),
-textureResize({size:[tex,tex]})
-)
-
-const result=io.writeBinary(doc)
-
-outputBlob=new Blob([result],{type:"model/gltf-binary"})
-
-const after=(outputBlob.size/1024/1024).toFixed(2)
-
-document.getElementById("after").innerText=
-"Compressed Size: "+after+" MB"
-
-document.getElementById("modal").style.display="none"
-
-document.getElementById("download").style.display="block"
-
-}
-
-function download(){
-
-const url=URL.createObjectURL(outputBlob)
-
-const a=document.createElement("a")
-
-a.href=url
-a.download="compressed.glb"
-
-a.click()
-
-}
-
 </script>
 
 </body>

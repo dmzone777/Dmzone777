@@ -2,168 +2,211 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Neon AI Background Remover</title>
+<title>Neon AI Background Studio</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
     body {
         margin: 0;
-        padding: 0;
         background: #05011a;
-        font-family: Poppins, sans-serif;
         color: white;
-        overflow-x: hidden;
+        font-family: Poppins, sans-serif;
     }
 
     h1 {
         text-align: center;
-        font-size: 32px;
         margin-top: 20px;
-        text-shadow: 0 0 20px #00f2ff;
+        text-shadow: 0 0 20px #00eaff;
     }
 
-    .container {
-        max-width: 450px;
+    .box {
+        max-width: 500px;
         margin: auto;
         margin-top: 20px;
         padding: 20px;
+        background: rgba(0, 0, 40, 0.5);
         border-radius: 15px;
-        background: rgba(0, 0, 40, 0.6);
-        box-shadow: 0 0 20px #00e5ff55;
-        border: 1px solid #0ff5;
+        border: 1px solid #00eaff55;
     }
 
     .upload-area {
-        padding: 35px;
         border: 2px dashed #0ff8;
+        padding: 30px;
+        text-align: center;
         border-radius: 15px;
-        text-align: center;
         cursor: pointer;
-        transition: 0.3s;
     }
 
-    .upload-area:hover {
-        background: rgba(0, 255, 255, 0.1);
-        box-shadow: 0 0 20px #00eaffaa inset;
-    }
-
-    img {
+    img, canvas {
         width: 100%;
-        border-radius: 10px;
         margin-top: 15px;
-        display: none;
-    }
-
-    #progressBox {
-        width: 100%;
-        background: #222;
         border-radius: 10px;
-        margin-top: 15px;
         display: none;
-    }
-
-    #progressBar {
-        width: 0%;
-        height: 10px;
-        background: #00f2ff;
-        box-shadow: 0 0 10px #00f2ff;
-        border-radius: 10px;
-    }
-
-    .download-buttons {
-        display: none;
-        margin-top: 20px;
-        text-align: center;
     }
 
     button {
-        padding: 10px 18px;
-        border: none;
-        margin: 8px;
-        background: #00f2ff;
-        color: #000;
+        padding: 10px 17px;
+        margin: 7px;
         border-radius: 8px;
         font-weight: bold;
+        border: none;
         cursor: pointer;
-        box-shadow: 0 0 15px #00f2ff99;
-        transition: .3s;
+        background: #00eaff;
+        color: #000;
+        box-shadow: 0 0 12px #00eaffaa;
     }
 
-    button:hover {
-        box-shadow: 0 0 25px #00f2ff;
+    .option-box {
+        margin-top: 20px;
+        display: none;
+        text-align: center;
     }
+
+    #brushSize {
+        width: 90%;
+        margin-top: 10px;
+        display: none;
+    }
+
 </style>
 </head>
 
 <body>
 
-<h1>Neon AI Background Remover ⚡</h1>
+<h1>Neon AI Background Studio ✨</h1>
 
-<div class="container">
+<div class="box">
+
     <div class="upload-area" onclick="fileInput.click()">
-        <p><b>Drop Image / Click to Upload</b></p>
+        <p><b>Click / Drop Image</b></p>
         <input type="file" id="fileInput" accept="image/*" hidden>
     </div>
 
-    <img id="inputPreview">
-    <div id="progressBox"><div id="progressBar"></div></div>
-    <img id="outputPreview">
+    <img id="outputImg">
+    <canvas id="editCanvas"></canvas>
 
-    <div class="download-buttons">
-        <button onclick="download('png')">Download PNG</button>
-        <button onclick="download('jpg')">Download JPG</button>
-        <button onclick="download('webp')">Download WEBP</button>
+    <div class="option-box" id="tools">
+        <button onclick="enterManual()">Manual Erase</button>
+        <button onclick="exitManual()">Exit Manual</button>
+        <br>
+
+        <label>Brush Size</label>
+        <input type="range" id="brushSize" min="8" max="60" value="25">
+
+        <br><br>
+        <button onclick="undoErase()">Undo</button>
+        <button onclick="downloadFinal()">Download</button>
     </div>
+
 </div>
 
 <script>
-const modelURL = "https://api-inference.huggingface.co/models/briaai/BRIA-RMBG-1.4";
-const input = document.getElementById("fileInput");
-const inputPreview = document.getElementById("inputPreview");
-const outputPreview = document.getElementById("outputPreview");
-const progressBox = document.getElementById("progressBox");
-const progressBar = document.getElementById("progressBar");
-const downloadBox = document.querySelector(".download-buttons");
-let finalBlob;
+const modelBG = "https://api-inference.huggingface.co/models/briaai/BRIA-RMBG-1.4";
 
-input.addEventListener("change", async () => {
-    let file = input.files[0];
+let outputImg = document.getElementById("outputImg");
+let editCanvas = document.getElementById("editCanvas");
+let ctx = editCanvas.getContext("2d");
+let tools = document.getElementById("tools");
+let brushSize = document.getElementById("brushSize");
+
+let manualMode = false;
+let historyStack = [];
+
+document.getElementById("fileInput").addEventListener("change", async () => {
+    let file = fileInput.files[0];
     if (!file) return;
 
-    inputPreview.src = URL.createObjectURL(file);
-    inputPreview.style.display = "block";
-
-    progressBox.style.display = "block";
-    progressBar.style.width = "30%";
-
-    let formData = new FormData();
-    formData.append("file", file);
-
-    progressBar.style.width = "60%";
-
-    let res = await fetch(modelURL, {
+    let res = await fetch(modelBG, {
         method: "POST",
         body: file,
-        headers: { "x-wait-for-model": "true" }
+        headers: {"x-wait-for-model": "true"}
     });
 
-    progressBar.style.width = "90%";
-
     let blob = await res.blob();
-    finalBlob = blob;
+    outputImg.src = URL.createObjectURL(blob);
+    outputImg.style.display = "block";
 
-    outputPreview.src = URL.createObjectURL(blob);
-    outputPreview.style.display = "block";
-
-    progressBar.style.width = "100%";
-
-    downloadBox.style.display = "block";
+    tools.style.display = "block";
 });
 
-function download(type) {
+function enterManual() {
+    manualMode = true;
+    brushSize.style.display = "block";
+
+    let img = new Image();
+    img.src = outputImg.src;
+
+    img.onload = () => {
+        editCanvas.width = img.width;
+        editCanvas.height = img.height;
+        ctx.drawImage(img, 0, 0);
+
+        editCanvas.style.display = "block";
+        outputImg.style.display = "none";
+    };
+
+    enableEraser();
+}
+
+function exitManual() {
+    manualMode = false;
+    brushSize.style.display = "none";
+
+    outputImg.src = editCanvas.toDataURL();
+    outputImg.style.display = "block";
+
+    editCanvas.style.display = "none";
+}
+
+function enableEraser() {
+    let drawing = false;
+
+    editCanvas.onmousedown = (e) => {
+        drawing = true;
+        saveState();
+        erase(e);
+    };
+
+    editCanvas.onmousemove = (e) => {
+        if (drawing) erase(e);
+    };
+
+    editCanvas.onmouseup = () => drawing = false;
+    editCanvas.onmouseleave = () => drawing = false;
+}
+
+function erase(e) {
+    const rect = editCanvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    ctx.globalCompositeOperation = "destination-out";
+    ctx.beginPath();
+    ctx.arc(x, y, brushSize.value, 0, Math.PI * 2);
+    ctx.fill();
+}
+
+function saveState() {
+    historyStack.push(editCanvas.toDataURL());
+}
+
+function undoErase() {
+    if (historyStack.length === 0) return;
+
+    let last = historyStack.pop();
+    let img = new Image();
+    img.src = last;
+
+    img.onload = () => {
+        ctx.globalCompositeOperation = "source-over";
+        ctx.drawImage(img, 0, 0);
+    };
+}
+
+function downloadFinal() {
     let a = document.createElement("a");
-    a.download = "bg_removed." + type;
-    a.href = URL.createObjectURL(finalBlob);
+    a.href = manualMode ? editCanvas.toDataURL() : outputImg.src;
+    a.download = "final_image.png";
     a.click();
 }
 </script>

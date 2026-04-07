@@ -1,73 +1,165 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    body { font-family: Arial; padding:20px; }
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  body { font-family: Arial; padding: 20px; }
 
-    #previewBox {
-      width: 100%;
-      max-width: 300px;
-      height: 300px;
-      border: 2px dashed #999;
-      border-radius: 15px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      overflow: hidden;
-      margin-bottom: 15px;
-      background: #f5f5f5;
-    }
+  #previewBox {
+    width: 100%;
+    max-width: 300px;
+    height: 300px;
+    border: 2px dashed #999;
+    border-radius: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    margin-bottom: 15px;
+    background: #f5f5f5;
+    position: relative;
+  }
 
-    #previewImg {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: none;
-    }
+  #previewImg, #eraseCanvas {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: none;
+    position: absolute;
+    top: 0;
+    left: 0;
+  }
 
-    #uploadBtn {
-      padding: 12px 20px;
-      background: #007bff;
-      color: white;
-      border: none;
-      border-radius: 10px;
-      font-size: 16px;
-    }
-  </style>
+  button, input[type=range] {
+    width: 100%;
+    margin: 8px 0;
+    padding: 10px;
+    border-radius: 10px;
+  }
+
+  .toolBox {
+    margin-top: 20px;
+  }
+</style>
 </head>
 <body>
 
-<h2>Image Upload + Preview</h2>
+<h2>🔥 Advanced Image Editor</h2>
 
 <div id="previewBox">
   <img id="previewImg">
+  <canvas id="eraseCanvas"></canvas>
 </div>
 
 <input type="file" id="fileInput" accept="image/*" style="display:none">
-
 <button id="uploadBtn">Select Image</button>
 
+<!-- Filters -->
+<div class="toolBox">
+  <label>Brightness</label>
+  <input type="range" id="brightness" min="0" max="200" value="100">
+
+  <label>Contrast</label>
+  <input type="range" id="contrast" min="0" max="200" value="100">
+
+  <label>Saturation</label>
+  <input type="range" id="saturation" min="0" max="200" value="100">
+
+  <label>Blur</label>
+  <input type="range" id="blur" min="0" max="10" value="0">
+
+  <button id="grayscaleBtn">Grayscale</button>
+  <button id="sepiaBtn">Sepia</button>
+  <button id="invertBtn">Invert</button>
+  <button id="sharpenBtn">Sharpen</button>
+</div>
+
+<!-- Manual Eraser -->
+<button id="eraserMode">Manual Eraser</button>
+<button id="resetBtn">Reset</button>
+<button id="downloadBtn">Download Image</button>
+
 <script>
-  const fileInput = document.getElementById("fileInput");
-  const previewImg = document.getElementById("previewImg");
-  const uploadBtn = document.getElementById("uploadBtn");
+const fileInput = document.getElementById("fileInput");
+const previewImg = document.getElementById("previewImg");
+const canvas = document.getElementById("eraseCanvas");
+const ctx = canvas.getContext("2d");
 
-  uploadBtn.onclick = () => fileInput.click();
+let originalImage = null;
+let erasing = false;
 
-  fileInput.addEventListener("change", function () {
-    const file = this.files[0];
-    if (!file) return;
+document.getElementById("uploadBtn").onclick = () => fileInput.click();
 
-    const reader = new FileReader();
+fileInput.addEventListener("change", function () {
+  const file = this.files[0];
+  if (!file) return;
 
-    reader.onload = function (e) {
-      previewImg.src = e.target.result;
-      previewImg.style.display = "block";
-    };
+  const reader = new FileReader();
+  reader.onload = function (e) {
+    previewImg.src = e.target.result;
+    previewImg.style.display = "block";
+    setTimeout(() => {
+      canvas.width = previewImg.width;
+      canvas.height = previewImg.height;
+      ctx.drawImage(previewImg, 0, 0, canvas.width, canvas.height);
+      canvas.style.display = "block";
+      originalImage = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    }, 100);
+  };
+  reader.readAsDataURL(file);
+});
 
-    reader.readAsDataURL(file);
-  });
+// Apply Filters
+function applyFilters() {
+  let filter = `
+    brightness(${brightness.value}%)
+    contrast(${contrast.value}%)
+    saturate(${saturation.value}%)
+    blur(${blur.value}px)
+  `;
+  previewImg.style.filter = filter;
+}
+brightness.oninput = applyFilters;
+contrast.oninput = applyFilters;
+saturation.oninput = applyFilters;
+blur.oninput = applyFilters;
+
+// Extra Filters
+document.getElementById("grayscaleBtn").onclick = () => previewImg.style.filter = "grayscale(100%)";
+document.getElementById("sepiaBtn").onclick = () => previewImg.style.filter = "sepia(100%)";
+document.getElementById("invertBtn").onclick = () => previewImg.style.filter = "invert(100%)";
+document.getElementById("sharpenBtn").onclick = () => previewImg.style.filter = "contrast(150%) brightness(120%)";
+
+// Manual Eraser
+canvas.addEventListener("touchstart", () => erasing = true);
+canvas.addEventListener("touchend", () => erasing = false);
+canvas.addEventListener("touchmove", erase);
+
+function erase(e) {
+  if (!erasing) return;
+  let rect = canvas.getBoundingClientRect();
+  let x = e.touches[0].clientX - rect.left;
+  let y = e.touches[0].clientY - rect.top;
+
+  ctx.globalCompositeOperation = "destination-out";
+  ctx.beginPath();
+  ctx.arc(x, y, 15, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+// Reset All
+document.getElementById("resetBtn").onclick = () => {
+  ctx.putImageData(originalImage, 0, 0);
+  previewImg.style.filter = "none";
+};
+
+// Download
+document.getElementById("downloadBtn").onclick = () => {
+  let link = document.createElement("a");
+  link.download = "edited.png";
+  link.href = canvas.toDataURL();
+  link.click();
+};
 </script>
 
 </body>

@@ -1,73 +1,59 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
 <meta charset="UTF-8">
 <title>Neon AI Background Studio</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
-    body {
-        margin: 0;
-        background: #05011a;
-        color: white;
-        font-family: Poppins, sans-serif;
-    }
-
-    h1 {
-        text-align: center;
-        margin-top: 20px;
-        text-shadow: 0 0 20px #00eaff;
-    }
-
-    .box {
-        max-width: 500px;
-        margin: auto;
-        margin-top: 20px;
-        padding: 20px;
-        background: rgba(0, 0, 40, 0.5);
-        border-radius: 15px;
-        border: 1px solid #00eaff55;
-    }
-
-    .upload-area {
-        border: 2px dashed #0ff8;
-        padding: 30px;
-        text-align: center;
-        border-radius: 15px;
-        cursor: pointer;
-    }
-
-    img, canvas {
-        width: 100%;
-        margin-top: 15px;
-        border-radius: 10px;
-        display: none;
-    }
-
-    button {
-        padding: 10px 17px;
-        margin: 7px;
-        border-radius: 8px;
-        font-weight: bold;
-        border: none;
-        cursor: pointer;
-        background: #00eaff;
-        color: #000;
-        box-shadow: 0 0 12px #00eaffaa;
-    }
-
-    .option-box {
-        margin-top: 20px;
-        display: none;
-        text-align: center;
-    }
-
-    #brushSize {
-        width: 90%;
-        margin-top: 10px;
-        display: none;
-    }
-
+body {
+    margin: 0;
+    background: #05011a;
+    font-family: Poppins, sans-serif;
+    color: white;
+}
+h1 {
+    text-align: center;
+    margin-top: 20px;
+    text-shadow: 0 0 20px #00eaff;
+}
+.box {
+    max-width: 500px;
+    margin: auto;
+    margin-top: 20px;
+    padding: 20px;
+    background: rgba(0,0,40,0.5);
+    border-radius: 15px;
+}
+.upload-area {
+    border: 2px dashed #0ff8;
+    padding: 25px;
+    text-align: center;
+    cursor: pointer;
+    border-radius: 12px;
+}
+img,canvas {
+    width: 100%;
+    border-radius: 10px;
+    margin-top: 15px;
+    display: none;
+}
+button {
+    padding: 10px 17px;
+    margin: 7px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    background: #00eaff;
+    color: #000;
+    font-weight: bold;
+    box-shadow: 0 0 12px #00eaffaa;
+}
+#brushSize {
+    width: 90%;
+    display: none;
+    margin-top: 10px;
+}
 </style>
 </head>
 
@@ -78,134 +64,150 @@
 <div class="box">
 
     <div class="upload-area" onclick="fileInput.click()">
-        <p><b>Click / Drop Image</b></p>
+        <p><b>Upload Image</b></p>
         <input type="file" id="fileInput" accept="image/*" hidden>
     </div>
 
     <img id="outputImg">
+
     <canvas id="editCanvas"></canvas>
 
-    <div class="option-box" id="tools">
-        <button onclick="enterManual()">Manual Erase</button>
-        <button onclick="exitManual()">Exit Manual</button>
+    <div id="tools" style="display:none; text-align:center;">
+        <button onclick="startManual()">Manual Erase</button>
+        <button onclick="applyManual()">Apply</button>
         <br>
-
         <label>Brush Size</label>
-        <input type="range" id="brushSize" min="8" max="60" value="25">
-
-        <br><br>
-        <button onclick="undoErase()">Undo</button>
+        <input type="range" id="brushSize" min="10" max="70" value="30">
+        <br>
+        <button onclick="undo()">Undo</button>
         <button onclick="downloadFinal()">Download</button>
     </div>
 
 </div>
 
 <script>
-const modelBG = "https://api-inference.huggingface.co/models/briaai/BRIA-RMBG-1.4";
+const modelURL = "https://api-inference.huggingface.co/models/briaai/BRIA-RMBG-1.4";
 
 let outputImg = document.getElementById("outputImg");
-let editCanvas = document.getElementById("editCanvas");
-let ctx = editCanvas.getContext("2d");
-let tools = document.getElementById("tools");
-let brushSize = document.getElementById("brushSize");
+let canvas = document.getElementById("editCanvas");
+let ctx = canvas.getContext("2d");
+let brush = document.getElementById("brushSize");
 
-let manualMode = false;
-let historyStack = [];
+let erasing = false;
+let undoStack = [];
 
 document.getElementById("fileInput").addEventListener("change", async () => {
     let file = fileInput.files[0];
     if (!file) return;
 
-    let res = await fetch(modelBG, {
+    // AI background remove
+    let res = await fetch(modelURL, {
         method: "POST",
         body: file,
-        headers: {"x-wait-for-model": "true"}
+        headers: { "x-wait-for-model": "true" }
     });
 
     let blob = await res.blob();
-    outputImg.src = URL.createObjectURL(blob);
+    let url = URL.createObjectURL(blob);
+
+    outputImg.src = url;
     outputImg.style.display = "block";
 
-    tools.style.display = "block";
+    document.getElementById("tools").style.display = "block";
 });
 
-function enterManual() {
-    manualMode = true;
-    brushSize.style.display = "block";
-
+function startManual() {
     let img = new Image();
     img.src = outputImg.src;
 
     img.onload = () => {
-        editCanvas.width = img.width;
-        editCanvas.height = img.height;
-        ctx.drawImage(img, 0, 0);
+        canvas.width = img.width;
+        canvas.height = img.height;
 
-        editCanvas.style.display = "block";
+        ctx.drawImage(img, 0, 0);
+        canvas.style.display = "block";
         outputImg.style.display = "none";
+
+        enableErase();
     };
 
-    enableEraser();
+    brush.style.display = "block";
 }
 
-function exitManual() {
-    manualMode = false;
-    brushSize.style.display = "none";
+function enableErase() {
 
-    outputImg.src = editCanvas.toDataURL();
-    outputImg.style.display = "block";
+    const getPos = (e) => {
+        let rect = canvas.getBoundingClientRect();
+        let x, y;
 
-    editCanvas.style.display = "none";
-}
+        if (e.touches) {
+            x = e.touches[0].clientX - rect.left;
+            y = e.touches[0].clientY - rect.top;
+        } else {
+            x = e.clientX - rect.left;
+            y = e.clientY - rect.top;
+        }
 
-function enableEraser() {
-    let drawing = false;
+        return { x, y };
+    };
 
-    editCanvas.onmousedown = (e) => {
-        drawing = true;
-        saveState();
+    const erase = (e) => {
+        let pos = getPos(e);
+
+        ctx.globalCompositeOperation = "destination-out";
+        ctx.beginPath();
+        ctx.arc(pos.x, pos.y, brush.value, 0, Math.PI * 2);
+        ctx.fill();
+    };
+
+    canvas.onmousedown = (e) => {
+        undoSave();
+        erasing = true;
         erase(e);
     };
 
-    editCanvas.onmousemove = (e) => {
-        if (drawing) erase(e);
+    canvas.onmousemove = (e) => {
+        if (erasing) erase(e);
     };
 
-    editCanvas.onmouseup = () => drawing = false;
-    editCanvas.onmouseleave = () => drawing = false;
+    canvas.onmouseup = () => erasing = false;
+    canvas.onmouseleave = () => erasing = false;
+
+    // TOUCH
+    canvas.ontouchstart = (e) => {
+        undoSave();
+        erasing = true;
+        erase(e);
+    };
+    canvas.ontouchmove = (e) => {
+        if (erasing) erase(e);
+    };
+    canvas.ontouchend = () => erasing = false;
 }
 
-function erase(e) {
-    const rect = editCanvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-
-    ctx.globalCompositeOperation = "destination-out";
-    ctx.beginPath();
-    ctx.arc(x, y, brushSize.value, 0, Math.PI * 2);
-    ctx.fill();
+function undoSave() {
+    undoStack.push(canvas.toDataURL());
 }
 
-function saveState() {
-    historyStack.push(editCanvas.toDataURL());
-}
+function undo() {
+    if (undoStack.length === 0) return;
 
-function undoErase() {
-    if (historyStack.length === 0) return;
-
-    let last = historyStack.pop();
     let img = new Image();
-    img.src = last;
+    img.src = undoStack.pop();
 
-    img.onload = () => {
-        ctx.globalCompositeOperation = "source-over";
-        ctx.drawImage(img, 0, 0);
-    };
+    img.onload = () => ctx.drawImage(img, 0, 0);
+}
+
+function applyManual() {
+    outputImg.src = canvas.toDataURL();
+    outputImg.style.display = "block";
+    canvas.style.display = "none";
+    brush.style.display = "none";
 }
 
 function downloadFinal() {
     let a = document.createElement("a");
-    a.href = manualMode ? editCanvas.toDataURL() : outputImg.src;
+    a.href = outputImg.src;
     a.download = "final_image.png";
     a.click();
 }

@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <html>
 <head>
+<meta charset="UTF-8">
+<title>Story App</title>
+
 <style>
 body{
   background:#111;
@@ -9,64 +12,30 @@ body{
   margin:0;
   padding:20px;
 }
-.page{
-  max-width:420px;
-  margin:auto;
-}
+.page{max-width:430px;margin:auto;}
 input, textarea{
-  width:100%;
-  padding:10px;
-  border-radius:10px;
-  margin:8px 0;
-  border:none;
+  width:100%;padding:10px;border-radius:10px;margin:8px 0;border:none;
 }
 button{
-  width:100%;
-  padding:12px;
-  border:none;
-  background:#007bff;
-  color:white;
-  border-radius:10px;
-  margin:5px 0;
+  width:100%;padding:12px;border:none;background:#007bff;color:white;
+  border-radius:10px;margin:5px 0;font-weight:bold;
 }
-.topbar{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-}
-.avatar{
-  width:80px;
-  height:80px;
-  border-radius:50%;
-}
-.profileBox{
-  margin:15px 0;
-}
+.topbar{display:flex;justify-content:space-between;align-items:center;}
+.avatar{width:80px;height:80px;border-radius:50%;}
 .storyCard{
-  background:#1e1e1e;
-  padding:15px;
-  border-radius:12px;
-  margin:10px 0;
+  background:#1e1e1e;padding:15px;border-radius:12px;margin:10px 0;
 }
-.storyImg{
-  width:100%;
-  margin-top:8px;
-  border-radius:10px;
-}
-.actionRow{
-  display:flex;
-  gap:10px;
-  margin-top:8px;
-}
-button.small{
-  padding:6px;
-  width:auto;
-}
+.storyImg{width:100%;margin-top:8px;border-radius:10px;}
+.actionRow{display:flex;gap:10px;margin-top:10px;}
+.small{padding:6px;width:auto;}
+.commentBox{background:#222;padding:8px;border-radius:8px;margin-top:6px;}
+.commentInput{display:flex;gap:5px;margin-top:8px;}
+.commentInput input{flex:1;}
+.title{font-size:18px;font-weight:bold;margin-bottom:3px;}
+.time{opacity:0.6;font-size:12px;margin-top:4px;}
+.expandBtn{color:#4da3ff;font-size:12px;cursor:pointer;}
 </style>
-<meta charset="UTF-8">
-<title>Story App</title>
 </head>
-
 <body>
 
 <!-- AUTH PAGE -->
@@ -86,11 +55,12 @@ button.small{
     <button onclick="resetPass()">Forgot Password?</button>
 </div>
 
+
 <!-- HOME PAGE -->
 <div id="homePage" class="page" style="display:none;">
     <div class="topbar">
         <h2>Stories</h2>
-        <button onclick="logout()">Logout</button>
+        <button class="small" onclick="logout()">Logout</button>
     </div>
 
     <div class="profileBox">
@@ -99,32 +69,38 @@ button.small{
         <p id="profileName"></p>
     </div>
 
+    <input id="storyTitle" placeholder="Story Title...">
     <textarea id="storyText" placeholder="Write a story..."></textarea>
     <input type="file" id="storyImg" accept="image/*">
     <button onclick="addStory()">Post Story</button>
 
-    <input id="searchText" placeholder="Search stories..." oninput="loadStories()">
+    <input id="searchText" placeholder="Search..." oninput="loadStories()">
 
     <div id="storyList"></div>
 </div>
 
-<!-- MAIN JS -->
+
+<!-- FIREBASE + APP JS -->
 <script type="module">
 
-/* ---------------- FIREBASE IMPORTS ---------------- */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import {
-    getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
-    sendPasswordResetEmail, signOut, updateProfile
+  getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
+  sendPasswordResetEmail, signOut, updateProfile
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
 import {
-    getFirestore, collection, addDoc, getDocs, deleteDoc, doc
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+  getDatabase, ref, set, push, onValue, update, remove
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
 import {
-    getStorage, ref, uploadBytes, getDownloadURL
+  getStorage, ref as sRef, uploadBytes, getDownloadURL
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
-/* ---------------- FIREBASE CONFIG ---------------- */
+
+// -------------------------
+// 🔥 YOUR FIREBASE CONFIG
+// -------------------------
 const firebaseConfig = {
   apiKey: "AIzaSyAtJzjzNsBvMVj6bOfByWzX21hxSAyLYVQ",
   authDomain: "mini-instagram-95485.firebaseapp.com",
@@ -132,54 +108,68 @@ const firebaseConfig = {
   storageBucket: "mini-instagram-95485.firebasestorage.app",
   messagingSenderId: "426906615408",
   appId: "1:426906615408:web:1ba85f1d00b9c09e083eb5",
-  measurementId: "G-V8E6NEGGZD"
+  measurementId: "G-V8E6NEGGZD",
+  databaseURL: "https://mini-instagram-95485-default-rtdb.firebaseio.com/"
 };
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth();
-const db = getFirestore(app);
+const db = getDatabase(app);
 const storage = getStorage();
 
-/* ---------------- PAGE ELEMENTS ---------------- */
-const authPage = document.getElementById("authPage");
-const homePage = document.getElementById("homePage");
-const storyList = document.getElementById("storyList");
 
-/* ---------------- SIGNUP ---------------- */
+// ---------------------------
+// SIGN UP
+// ---------------------------
 window.signup = async function() {
     let name = regName.value;
     let email = regEmail.value;
     let pass = regPass.value;
 
-    let result = await createUserWithEmailAndPassword(auth, email, pass);
-    await updateProfile(result.user, { displayName: name });
+    let user = await createUserWithEmailAndPassword(auth, email, pass);
+    await updateProfile(user.user, { displayName: name });
+
+    set(ref(db, "users/" + user.user.uid), {
+        name: name,
+        email: email,
+        photo: ""
+    });
 
     alert("Account Created!");
 };
 
-/* ---------------- LOGIN ---------------- */
-window.login = async function() {
-    let email = logEmail.value;
-    let pass = logPass.value;
 
-    await signInWithEmailAndPassword(auth, email, pass);
+// ---------------------------
+// LOGIN
+// ---------------------------
+window.login = async function() {
+    await signInWithEmailAndPassword(auth, logEmail.value, logPass.value);
     loadUI();
 };
 
-/* ---------------- LOGOUT ---------------- */
-window.logout = async function() {
-    await signOut(auth);
+
+// ---------------------------
+// RESET PASSWORD
+// ---------------------------
+window.resetPass = function() {
+    sendPasswordResetEmail(auth, logEmail.value);
+    alert("Link sent!");
+};
+
+
+// ---------------------------
+// LOGOUT
+// ---------------------------
+window.logout = function() {
+    signOut(auth);
     location.reload();
 };
 
-/* ---------------- RESET PASS ---------------- */
-window.resetPass = function() {
-    sendPasswordResetEmail(auth, logEmail.value);
-    alert("Reset link sent!");
-};
 
-/* ---------------- LOAD UI ---------------- */
-function loadUI() {
+// ---------------------------
+// LOAD USER UI
+// ---------------------------
+function loadUI(){
     authPage.style.display = "none";
     homePage.style.display = "block";
 
@@ -189,84 +179,209 @@ function loadUI() {
     loadStories();
 }
 
-/* ---------------- UPLOAD PROFILE PIC ---------------- */
-window.uploadProfilePic = async function() {
+
+// ---------------------------
+// TIME AGO FUNCTION
+// ---------------------------
+function timeAgo(ms){
+    let sec = Math.floor((Date.now() - ms) / 1000);
+    if(sec < 60) return sec+"s ago";
+    let min = Math.floor(sec/60);
+    if(min < 60) return min+"m ago";
+    let hr = Math.floor(min/60);
+    if(hr < 24) return hr+"h ago";
+    let day = Math.floor(hr/24);
+    return day+"d ago";
+}
+
+
+// ---------------------------
+// UPLOAD PROFILE PICTURE
+// ---------------------------
+window.uploadProfilePic = async function(){
     let file = profileImgInput.files[0];
-    let folder = ref(storage, "profile/" + auth.currentUser.uid);
+    let folder = sRef(storage, "profile/"+auth.currentUser.uid);
 
     await uploadBytes(folder, file);
     let url = await getDownloadURL(folder);
 
-    await updateProfile(auth.currentUser, { photoURL: url });
+    await updateProfile(auth.currentUser, { photoURL:url });
+
+    update(ref(db, "users/"+auth.currentUser.uid), { photo:url });
+
     profilePic.src = url;
 };
 
-/* ---------------- ADD STORY ---------------- */
-window.addStory = async function () {
+
+// ---------------------------
+// ADD STORY
+// ---------------------------
+window.addStory = async function(){
+    let title = storyTitle.value;
     let text = storyText.value;
     let imgFile = storyImg.files[0];
     let imgUrl = "";
 
-    if (imgFile) {
-        let folder = ref(storage, "stories/" + Date.now());
+    if(imgFile){
+        let folder = sRef(storage, "story/"+Date.now());
         await uploadBytes(folder, imgFile);
         imgUrl = await getDownloadURL(folder);
     }
 
-    await addDoc(collection(db, "stories"), {
-        user: auth.currentUser.displayName,
+    let storyId = push(ref(db, "stories")).key;
+
+    set(ref(db, "stories/"+storyId), {
+        uid: auth.currentUser.uid,
+        userName: auth.currentUser.displayName,
         userPic: auth.currentUser.photoURL || "",
+        title: title,
         text: text,
         img: imgUrl,
-        time: Date.now(),
-        uid: auth.currentUser.uid
+        time: Date.now()
     });
 
+    storyTitle.value = "";
     storyText.value = "";
     storyImg.value = "";
+
     loadStories();
 };
 
-/* ---------------- LOAD STORIES ---------------- */
-async function loadStories() {
-    storyList.innerHTML = "";
-    let search = searchText.value.toLowerCase();
 
-    let data = await getDocs(collection(db, "stories"));
-    data.forEach(d => {
-        let s = d.data();
+// ---------------------------
+// LIKE STORY
+// ---------------------------
+window.likeStory = function(storyId){
+    update(ref(db, "likes/"+storyId+"/"+auth.currentUser.uid), true);
+};
 
-        if (!s.text.toLowerCase().includes(search)) return;
 
-        let card = document.createElement("div");
-        card.className = "storyCard";
+// ---------------------------
+// ADD COMMENT
+// ---------------------------
+window.addComment = function(storyId){
+    let cmtText = document.getElementById("cmtInput_"+storyId).value;
 
-        card.innerHTML = `
-            <p><b>${s.user}</b></p>
-            <p>${s.text}</p>
-            ${s.img ? `<img class="storyImg" src="${s.img}">` : ""}
-            <div class="actionRow">
-                ${s.uid === auth.currentUser.uid ? `
-                    <button class="small" onclick="delStory('${d.id}')">Delete</button>
-                ` : ""}
-            </div>
-        `;
+    let cmtId = push(ref(db, "comments/"+storyId)).key;
 
-        storyList.appendChild(card);
+    set(ref(db, "comments/"+storyId+"/"+cmtId), {
+        uid: auth.currentUser.uid,
+        userName: auth.currentUser.displayName,
+        text: cmtText,
+        time: Date.now()
+    });
+
+    document.getElementById("cmtInput_"+storyId).value = "";
+};
+
+
+// ---------------------------
+// LOAD STORIES
+// ---------------------------
+function loadStories(){
+    onValue(ref(db, "stories"), snapshot => {
+        storyList.innerHTML = "";
+
+        let stories = snapshot.val();
+        if(!stories) return;
+
+        let search = searchText.value.toLowerCase();
+
+        Object.entries(stories).sort(
+            (a,b)=>b[1].time - a[1].time
+        ).forEach(([id, s]) => {
+
+            if(!s.title.toLowerCase().includes(search) &&
+               !s.text.toLowerCase().includes(search))
+               return;
+
+            let firstLine = s.text.split("\n")[0];
+
+            let card = document.createElement("div");
+            card.className = "storyCard";
+
+            card.innerHTML = `
+                <p class="title">${s.title}</p>
+                <p><b>${s.userName}</b></p>
+
+                <p id="text_${id}">
+                   ${firstLine} 
+                   ${s.text.length>firstLine.length ? 
+                      `<span class='expandBtn' onclick="expandStory('${id}','${s.text.replace(/'/g,"\\'")}')">Read more</span>`
+                      : "" }
+                </p>
+
+                ${s.img ? `<img class="storyImg" src="${s.img}">` : ""}
+
+                <p class="time">${timeAgo(s.time)}</p>
+
+                <div class="actionRow">
+                    <button class="small" onclick="likeStory('${id}')">❤️ Like</button>
+                    <button class="small" onclick="toggleComments('${id}')">💬 Comments</button>
+                </div>
+
+                <div id="comments_${id}" style="display:none;"></div>
+
+                <div class="commentInput">
+                    <input id="cmtInput_${id}" placeholder="Write comment...">
+                    <button class="small" onclick="addComment('${id}')">Send</button>
+                </div>
+            `;
+
+            storyList.appendChild(card);
+
+            loadComments(id);
+        });
     });
 }
 
-/* ---------------- DELETE STORY ---------------- */
-window.delStory = async function(id) {
-    await deleteDoc(doc(db, "stories", id));
-    loadStories();
+
+// ---------------------------
+// EXPAND FULL STORY
+// ---------------------------
+window.expandStory = function(id, fullText){
+    document.getElementById("text_"+id).innerHTML = fullText;
 };
 
-/* ---------------- CHECK AUTH ---------------- */
-auth.onAuthStateChanged(user => {
-    if (user) loadUI();
-});
-</script>
 
+// ---------------------------
+// TOGGLE COMMENT SECTION
+// ---------------------------
+window.toggleComments = function(id){
+    let box = document.getElementById("comments_"+id);
+    box.style.display = box.style.display === "none" ? "block" : "none";
+};
+
+
+// ---------------------------
+// LOAD COMMENTS
+// ---------------------------
+function loadComments(storyId){
+    onValue(ref(db, "comments/"+storyId), snap=>{
+        let box = document.getElementById("comments_"+storyId);
+        if(!box) return;
+
+        box.innerHTML = "";
+        let cmts = snap.val();
+        if(!cmts) return;
+
+        Object.values(cmts).forEach(c=>{
+            let div = document.createElement("div");
+            div.className="commentBox";
+            div.innerHTML = `<b>${c.userName}:</b> ${c.text}`;
+            box.appendChild(div);
+        });
+    });
+}
+
+
+// ---------------------------
+// AUTH STATE CHANGE
+// ---------------------------
+auth.onAuthStateChanged(user=>{
+    if(user) loadUI();
+});
+
+</script>
 </body>
 </html>

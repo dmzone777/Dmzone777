@@ -1,167 +1,111 @@
-// -------------------------------
-//  Firebase IMPORTS
-// -------------------------------
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-app.js";
-import { 
-  getAuth, 
-  createUserWithEmailAndPassword, 
-  signInWithEmailAndPassword 
+import {
+  getAuth,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut
 } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-auth.js";
-
-import { 
-  getFirestore, 
-  collection, 
-  addDoc, 
+import {
+  getFirestore,
+  collection,
+  addDoc,
   onSnapshot,
   updateDoc,
   doc
 } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-firestore.js";
 
-// -------------------------------
-//  YOUR FIREBASE CONFIG
-// -------------------------------
+// FIXED FIREBASE CONFIG
 const firebaseConfig = {
   apiKey: "AIzaSyAtJzjzNsBvMVj6bOfByWzX21hxSAyLYVQ",
   authDomain: "mini-instagram-95485.firebaseapp.com",
   projectId: "mini-instagram-95485",
-  storageBucket: "mini-instagram-95485.firebasestorage.app",
+  storageBucket: "mini-instagram-95485.appspot.com",
   messagingSenderId: "426906615408",
   appId: "1:426906615408:web:1ba85f1d00b9c09e083eb5",
   measurementId: "G-V8E6NEGGZD"
 };
 
-// -------------------------------
-//  Initialize Firebase
-// -------------------------------
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// -------------------------------
-//  SIGN UP
-// -------------------------------
-window.signup = function () {
-  const email = document.getElementById("signupEmail").value;
-  const pass = document.getElementById("signupPass").value;
-
+// --------------- AUTH
+window.signup = () => {
+  let email = document.getElementById("signupEmail").value;
+  let pass = document.getElementById("signupPass").value;
   createUserWithEmailAndPassword(auth, email, pass)
-    .then(() => alert("Sign Up Successful"))
-    .catch(err => alert(err.message));
+    .then(() => alert("Signed up"))
+    .catch(e => alert(e.message));
 };
 
-// -------------------------------
-//  LOGIN
-// -------------------------------
-window.login = function () {
-  const email = document.getElementById("loginEmail").value;
-  const pass = document.getElementById("loginPass").value;
-
+window.login = () => {
+  let email = document.getElementById("loginEmail").value;
+  let pass = document.getElementById("loginPass").value;
   signInWithEmailAndPassword(auth, email, pass)
-    .then(() => alert("Login Successful"))
-    .catch(err => alert(err.message));
+    .then(() => showHome())
+    .catch(e => alert(e.message));
 };
 
-// -------------------------------
-//  ADD STORY
-// -------------------------------
-window.sendStory = async function () {
-  const title = document.getElementById("storyTitle").value;
-  const text = document.getElementById("storyText").value;
+window.logout = () => {
+  signOut(auth).then(() => location.reload());
+};
 
-  if (!title || !text) return alert("Please fill both fields.");
+function showHome(){
+  document.getElementById("authPage").classList.add("hidden");
+  document.getElementById("homePage").classList.remove("hidden");
+  loadStories();
+}
 
-  await addDoc(collection(db, "stories"), {
-    title: title,
-    text: text,
-    likes: 0,
-    timestamp: Date.now()
+// --------------- ADD STORY
+window.sendStory = async () => {
+  let title = document.getElementById("storyTitle").value;
+  let text = document.getElementById("storyText").value;
+  if(!title || !text) return;
+  await addDoc(collection(db,"stories"), {
+    title,title,
+    text,text,
+    likes:0,
+    timestamp:Date.now()
   });
-
-  document.getElementById("storyTitle").value = "";
-  document.getElementById("storyText").value = "";
 };
 
-// -------------------------------
-//  LIVE STORY LOADER
-// -------------------------------
+// --------------- LIST STORIES
 const storyList = document.getElementById("storyList");
-
-onSnapshot(collection(db, "stories"), (snapshot) => {
+onSnapshot(collection(db,"stories"), snap => {
   storyList.innerHTML = "";
-
-  snapshot.forEach((docu) => {
-    const data = docu.data();
-
-    const div = document.createElement("div");
+  snap.forEach(docu => {
+    let data = docu.data();
+    let div = document.createElement("div");
     div.className = "story-card";
-
-    const timeAgo = getTimeAgo(data.timestamp);
 
     div.innerHTML = `
       <div class="story-title" onclick="toggleStory('${docu.id}')">
         ${data.title}
       </div>
-
-      <div id="story-${docu.id}" class="hidden" style="margin-top:10px;">
-        <div>${data.text}</div><br>
-
-        <button class="like-btn" onclick="likeStory('${docu.id}', ${data.likes})">❤️ ${data.likes}</button>
-        <button class="comment-btn" onclick="addComment('${docu.id}')">💬 Comment</button>
-
-        <div class="story-time">${timeAgo}</div>
+      <div id="story-${docu.id}" class="hidden">
+        <p>${data.text}</p>
+        <button class="like-btn" onclick="likeStory('${docu.id}',${data.likes})">❤️ ${data.likes}</button>
       </div>
     `;
-
     storyList.appendChild(div);
   });
 });
 
-// -------------------------------
-//  LIKE SYSTEM
-// -------------------------------
-window.likeStory = async function (id, currentLikes) {
-  const ref = doc(db, "stories", id);
-  await updateDoc(ref, { likes: currentLikes + 1 });
+// --------------- TOGGLE & LIKE
+window.toggleStory = id => {
+  let el = document.getElementById("story-"+id);
+  el.classList.toggle("hidden");
 };
 
-// -------------------------------
-//  COMMENT SYSTEM (simple)
-// -------------------------------
-window.addComment = function (id) {
-  const c = prompt("Write your comment:");
-  if (c) alert("Comment saved: " + c);
+window.likeStory = async (id, likes) => {
+  await updateDoc(doc(db,"stories",id), { likes: likes+1 });
 };
 
-// -------------------------------
-//  TAP TO OPEN FULL STORY
-// -------------------------------
-window.toggleStory = function (id) {
-  const box = document.getElementById("story-" + id);
-  box.classList.toggle("hidden");
-};
-
-// -------------------------------
-//  SEARCH SYSTEM
-// -------------------------------
-window.searchStory = function () {
-  const value = document.getElementById("searchInput").value.toLowerCase();
-  const cards = document.querySelectorAll(".story-card");
-
-  cards.forEach(card => {
-    const title = card.querySelector(".story-title").innerText.toLowerCase();
+// --------------- SEARCH
+window.searchStory = () => {
+  let value = document.getElementById("searchInput").value.toLowerCase();
+  document.querySelectorAll(".story-card").forEach(card => {
+    let title = card.innerText.toLowerCase();
     card.style.display = title.includes(value) ? "block" : "none";
   });
 };
-
-// -------------------------------
-//  TIME AGO SYSTEM
-// -------------------------------
-function getTimeAgo(time) {
-  const diff = (Date.now() - time) / 1000;
-
-  if (diff < 60) return "Just now";
-  if (diff < 3600) return Math.floor(diff / 60) + " min ago";
-  if (diff < 86400) return Math.floor(diff / 3600) + " hrs ago";
-
-  return Math.floor(diff / 86400) + " days ago";
-}

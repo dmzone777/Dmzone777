@@ -11,8 +11,12 @@ button{width:100%;padding:12px;border:none;background:#007bff;color:white;border
 .story-card{background:#222;padding:12px;border-radius:8px;margin:10px 0;}
 .story-title{font-size:18px;font-weight:bold;cursor:pointer;}
 .hidden{display:none;}
-.like-btn,.comment-btn{background:#444;padding:6px 12px;border-radius:6px;margin-right:8px;}
-input[type="text"]{color:black;}
+.like-btn,.comment-btn,.delete-btn{
+  background:#444;padding:6px 12px;border-radius:6px;margin-right:8px;border:none;color:white;
+}
+.comment-box{margin-top:10px;}
+.comment-item{background:#333;padding:6px;border-radius:6px;margin:5px 0;}
+.user-tag{font-size:12px;color:#bbb;margin-bottom:8px;}
 </style>
 </head>
 <body>
@@ -20,6 +24,7 @@ input[type="text"]{color:black;}
 <div id="authPage" class="page">
     <h2>Welcome</h2>
 
+    <input id="signupName" placeholder="Full Name" type="text">
     <input id="signupEmail" placeholder="Email" type="email">
     <input id="signupPass" placeholder="Password" type="password">
     <button onclick="signup()">Sign Up</button>

@@ -18,15 +18,16 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.3/firebase-firestore.js";
 
 // -------------------------------
-//  Firebase CONFIG (CHANGE THIS)
+//  YOUR FIREBASE CONFIG
 // -------------------------------
 const firebaseConfig = {
-  apiKey: "YOUR-API-KEY",
-  authDomain: "YOUR-PROJECT-ID.firebaseapp.com",
-  projectId: "YOUR-PROJECT-ID",
-  storageBucket: "YOUR-PROJECT-ID.appspot.com",
-  messagingSenderId: "000000000000",
-  appId: "1:000000000000:web:000000000000"
+  apiKey: "AIzaSyAtJzjzNsBvMVj6bOfByWzX21hxSAyLYVQ",
+  authDomain: "mini-instagram-95485.firebaseapp.com",
+  projectId: "mini-instagram-95485",
+  storageBucket: "mini-instagram-95485.firebasestorage.app",
+  messagingSenderId: "426906615408",
+  appId: "1:426906615408:web:1ba85f1d00b9c09e083eb5",
+  measurementId: "G-V8E6NEGGZD"
 };
 
 // -------------------------------
@@ -116,7 +117,7 @@ onSnapshot(collection(db, "stories"), (snapshot) => {
 });
 
 // -------------------------------
-//  LIKE FUNCTION
+//  LIKE SYSTEM
 // -------------------------------
 window.likeStory = async function (id, currentLikes) {
   const ref = doc(db, "stories", id);
@@ -124,7 +125,7 @@ window.likeStory = async function (id, currentLikes) {
 };
 
 // -------------------------------
-//  COMMENT FUNCTION (simple prompt)
+//  COMMENT SYSTEM (simple)
 // -------------------------------
 window.addComment = function (id) {
   const c = prompt("Write your comment:");
@@ -140,7 +141,7 @@ window.toggleStory = function (id) {
 };
 
 // -------------------------------
-//  SEARCH
+//  SEARCH SYSTEM
 // -------------------------------
 window.searchStory = function () {
   const value = document.getElementById("searchInput").value.toLowerCase();
@@ -153,7 +154,7 @@ window.searchStory = function () {
 };
 
 // -------------------------------
-//  TIME AGO CALCULATOR
+//  TIME AGO SYSTEM
 // -------------------------------
 function getTimeAgo(time) {
   const diff = (Date.now() - time) / 1000;

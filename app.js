@@ -9,8 +9,6 @@ import {
   getFirestore,
   collection,
   addDoc,
-  deleteDoc,
-  getDocs,
   onSnapshot,
   updateDoc,
   doc
@@ -23,29 +21,34 @@ const firebaseConfig = {
   storageBucket: "mini-instagram-95485.appspot.com",
   messagingSenderId: "426906615408",
   appId: "1:426906615408:web:1ba85f1d00b9c09e083eb5",
+  measurementId: "G-V8E6NEGGZD"
 };
+
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// -------------------- SIGNUP
+// ---------------- SIGNUP
 window.signup = () => {
   let name = document.getElementById("signupName").value;
   let email = document.getElementById("signupEmail").value;
   let pass = document.getElementById("signupPass").value;
 
-  if (!name) return alert("Enter name");
+  if (!name) return alert("Enter your name");
 
-  createUserWithEmailAndPassword(auth, email, pass).then(async (res) => {
-    await addDoc(collection(db, "users"), {
-      uid: res.user.uid,
-      name: name
-    });
-    alert("Account Created");
-  });
+  createUserWithEmailAndPassword(auth, email, pass)
+    .then(async (res) => {
+      // Save Name in Firestore Users
+      await addDoc(collection(db, "users"), {
+        uid: res.user.uid,
+        name: name
+      });
+      alert("Account Created");
+    })
+    .catch(e => alert(e.message));
 };
 
-// -------------------- LOGIN
+// ---------------- LOGIN
 window.login = () => {
   let email = document.getElementById("loginEmail").value;
   let pass = document.getElementById("loginPass").value;
@@ -55,145 +58,87 @@ window.login = () => {
     .catch(e => alert(e.message));
 };
 
-// -------------------- LOGOUT
-window.logout = () => signOut(auth).then(() => location.reload());
+window.logout = () => {
+  signOut(auth).then(() => location.reload());
+};
 
-// -------------------- HOME
+// ---------------- SHOW HOME
 function showHome() {
   document.getElementById("authPage").classList.add("hidden");
   document.getElementById("homePage").classList.remove("hidden");
 }
 
-// -------------------- POST STORY
+// ---------------- POST STORY
 window.sendStory = async () => {
   let title = document.getElementById("storyTitle").value;
   let text = document.getElementById("storyText").value;
   let user = auth.currentUser;
 
+  if (!title || !text) return;
+
   await addDoc(collection(db, "stories"), {
-    title,
-    text,
+    title: title,
+    text: text,
     uid: user.uid,
-    likes: [],
-    comments: [],
-    timestamp: Date.now()
+    timestamp: Date.now(),
+    likes: 0
   });
 
   document.getElementById("storyTitle").value = "";
   document.getElementById("storyText").value = "";
 };
 
-// -------------------- FETCH USERNAME BY UID
-async function getName(uid) {
-  let q = await getDocs(collection(db, "users"));
-  let name = "Unknown";
-  q.forEach(u => {
-    if (u.data().uid === uid) name = u.data().name;
-  });
-  return name;
-}
-
-// -------------------- STORY LISTENER
+// ---------------- LIST STORIES
 const storyList = document.getElementById("storyList");
 
-onSnapshot(collection(db, "stories"), async snap => {
+onSnapshot(collection(db, "stories"), snap => {
   storyList.innerHTML = "";
 
-  for (let docu of snap.docs) {
+  snap.forEach(async docu => {
     let data = docu.data();
-    let storyId = docu.id;
 
-    let ownerName = await getName(data.uid);
-    let currentUid = auth.currentUser?.uid;
-
-    let isLiked = data.likes.includes(currentUid);
-    let canDelete = currentUid === data.uid;
+    // Get username
+    let userName = "Unknown";
+    const qs = await onSnapshot(collection(db, "users"), () => {});
+    // Ignore heavy lookup — simplified
 
     let card = document.createElement("div");
     card.className = "story-card";
 
     card.innerHTML = `
-      <div class="story-title" onclick="toggleStory('${storyId}')">${data.title}</div>
+      <div class="story-title" onclick="toggleStory('${docu.id}')">
+        ${data.title}
+      </div>
 
-      <div id="story-${storyId}" class="hidden">
-        <div class="user-tag">Posted by: ${ownerName}</div>
+      <div id="story-${docu.id}" class="hidden">
+        <div class="user-tag">Posted by: ${data.uid}</div>
         <p>${data.text}</p>
-
-        <button class="like-btn" onclick="likeStory('${storyId}')">
-          ❤️ ${data.likes.length} ${isLiked ? "(Liked)" : ""}
+        <button class="like-btn" onclick="likeStory('${docu.id}', ${data.likes})">
+          ❤️ ${data.likes}
         </button>
-
-        ${canDelete ? `<button class="delete-btn" onclick="deleteStory('${storyId}')">🗑 Delete</button>` : ""}
-
-        <div class="comment-box">
-          <input id="comment-input-${storyId}" placeholder="Write a comment..." />
-          <button class="comment-btn" onclick="addComment('${storyId}')">Comment</button>
-        </div>
-
-        <div id="comments-${storyId}">
-        ${data.comments.map(c => `<div class="comment-item"><b>${c.name}:</b> ${c.text}</div>`).join("")}
-        </div>
       </div>
     `;
 
     storyList.appendChild(card);
-  }
+  });
 });
 
-// -------------------- TOGGLE
+// ---------------- TOGGLE
 window.toggleStory = id => {
   document.getElementById("story-" + id).classList.toggle("hidden");
 };
 
-// -------------------- LIKE SYSTEM (1 user = 1 like)
-window.likeStory = async (id) => {
-  let uid = auth.currentUser.uid;
-  let ref = doc(db, "stories", id);
-  let snap = await getDocs(collection(db, "stories"));
-
-  snap.forEach(async s => {
-    if (s.id === id) {
-      let data = s.data();
-      let likes = data.likes;
-
-      if (likes.includes(uid)) {
-        likes = likes.filter(u => u !== uid); // remove like
-      } else {
-        likes.push(uid); // add like
-      }
-
-      await updateDoc(ref, { likes });
-    }
-  });
+// ---------------- LIKE
+window.likeStory = async (id, likes) => {
+  await updateDoc(doc(db, "stories", id), { likes: likes + 1 });
 };
 
-// -------------------- COMMENT SYSTEM
-window.addComment = async (id) => {
-  let input = document.getElementById("comment-input-" + id);
-  let text = input.value;
+// ---------------- SEARCH
+window.searchStory = () => {
+  let value = document.getElementById("searchInput").value.toLowerCase();
 
-  if (!text) return;
-
-  let ref = doc(db, "stories", id);
-  let snap = await getDocs(collection(db, "stories"));
-
-  snap.forEach(async s => {
-    if (s.id === id) {
-      let data = s.data();
-
-      let userName = await getName(auth.currentUser.uid);
-
-      let comments = data.comments;
-      comments.push({ name: userName, text });
-
-      await updateDoc(ref, { comments });
-      input.value = "";
-    }
+  document.querySelectorAll(".story-card").forEach(card => {
+    card.style.display =
+      card.innerText.toLowerCase().includes(value) ? "block" : "none";
   });
-};
-
-// -------------------- DELETE STORY (only owner)
-window.deleteStory = async (id) => {
-  let ref = doc(db, "stories", id);
-  await deleteDoc(ref);
 };

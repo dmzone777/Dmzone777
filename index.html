@@ -63,14 +63,16 @@ button.small{
   width:auto;
 }
 </style>
-    <meta charset="UTF-8">
-    <title>Story App</title>
-    <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<title>Story App</title>
 </head>
+
 <body>
 
+<!-- AUTH PAGE -->
 <div id="authPage" class="page">
     <h2>Welcome to Story App</h2>
+
     <input id="regName" placeholder="Full Name">
     <input id="regEmail" placeholder="Email">
     <input id="regPass" type="password" placeholder="Password">
@@ -84,6 +86,7 @@ button.small{
     <button onclick="resetPass()">Forgot Password?</button>
 </div>
 
+<!-- HOME PAGE -->
 <div id="homePage" class="page" style="display:none;">
     <div class="topbar">
         <h2>Stories</h2>
@@ -105,23 +108,23 @@ button.small{
     <div id="storyList"></div>
 </div>
 
-<script type="module" src="app.js"></script>
-<script>
+<!-- MAIN JS -->
+<script type="module">
+
+/* ---------------- FIREBASE IMPORTS ---------------- */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import {
     getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
     sendPasswordResetEmail, signOut, updateProfile
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import {
-    getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc
+    getFirestore, collection, addDoc, getDocs, deleteDoc, doc
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import {
     getStorage, ref, uploadBytes, getDownloadURL
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
-// -------------------------
-// 🔥 YOUR FIREBASE CONFIG
-// -------------------------
+/* ---------------- FIREBASE CONFIG ---------------- */
 const firebaseConfig = {
   apiKey: "AIzaSyAtJzjzNsBvMVj6bOfByWzX21hxSAyLYVQ",
   authDomain: "mini-instagram-95485.firebaseapp.com",
@@ -132,21 +135,17 @@ const firebaseConfig = {
   measurementId: "G-V8E6NEGGZD"
 };
 
-
-;
-
 const app = initializeApp(firebaseConfig);
 const auth = getAuth();
 const db = getFirestore(app);
 const storage = getStorage();
 
+/* ---------------- PAGE ELEMENTS ---------------- */
 const authPage = document.getElementById("authPage");
 const homePage = document.getElementById("homePage");
 const storyList = document.getElementById("storyList");
 
-// ---------------------------
-// SIGN UP
-// ---------------------------
+/* ---------------- SIGNUP ---------------- */
 window.signup = async function() {
     let name = regName.value;
     let email = regEmail.value;
@@ -158,9 +157,7 @@ window.signup = async function() {
     alert("Account Created!");
 };
 
-// ---------------------------
-// LOGIN
-// ---------------------------
+/* ---------------- LOGIN ---------------- */
 window.login = async function() {
     let email = logEmail.value;
     let pass = logPass.value;
@@ -169,25 +166,19 @@ window.login = async function() {
     loadUI();
 };
 
-// ---------------------------
-// LOGOUT
-// ---------------------------
+/* ---------------- LOGOUT ---------------- */
 window.logout = async function() {
     await signOut(auth);
     location.reload();
 };
 
-// ---------------------------
-// RESET PASSWORD
-// ---------------------------
+/* ---------------- RESET PASS ---------------- */
 window.resetPass = function() {
     sendPasswordResetEmail(auth, logEmail.value);
     alert("Reset link sent!");
 };
 
-// ---------------------------
-// LOAD USER UI
-// ---------------------------
+/* ---------------- LOAD UI ---------------- */
 function loadUI() {
     authPage.style.display = "none";
     homePage.style.display = "block";
@@ -198,9 +189,7 @@ function loadUI() {
     loadStories();
 }
 
-// ---------------------------
-// PROFILE PIC UPLOAD
-// ---------------------------
+/* ---------------- UPLOAD PROFILE PIC ---------------- */
 window.uploadProfilePic = async function() {
     let file = profileImgInput.files[0];
     let folder = ref(storage, "profile/" + auth.currentUser.uid);
@@ -212,9 +201,7 @@ window.uploadProfilePic = async function() {
     profilePic.src = url;
 };
 
-// ---------------------------
-// ADD STORY
-// ---------------------------
+/* ---------------- ADD STORY ---------------- */
 window.addStory = async function () {
     let text = storyText.value;
     let imgFile = storyImg.files[0];
@@ -240,9 +227,7 @@ window.addStory = async function () {
     loadStories();
 };
 
-// ---------------------------
-// LOAD STORIES
-// ---------------------------
+/* ---------------- LOAD STORIES ---------------- */
 async function loadStories() {
     storyList.innerHTML = "";
     let search = searchText.value.toLowerCase();
@@ -271,20 +256,17 @@ async function loadStories() {
     });
 }
 
-// ---------------------------
-// DELETE STORY
-// ---------------------------
+/* ---------------- DELETE STORY ---------------- */
 window.delStory = async function(id) {
     await deleteDoc(doc(db, "stories", id));
     loadStories();
 };
 
-// ---------------------------
-// ON AUTH CHANGE
-// ---------------------------
+/* ---------------- CHECK AUTH ---------------- */
 auth.onAuthStateChanged(user => {
     if (user) loadUI();
 });
 </script>
+
 </body>
 </html>

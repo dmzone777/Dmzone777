@@ -99,13 +99,13 @@ import {
 
 
 // -------------------------
-// 🔥 YOUR FIREBASE CONFIG
+// 🔥 FIXED FIREBASE CONFIG
 // -------------------------
 const firebaseConfig = {
   apiKey: "AIzaSyAtJzjzNsBvMVj6bOfByWzX21hxSAyLYVQ",
   authDomain: "mini-instagram-95485.firebaseapp.com",
   projectId: "mini-instagram-95485",
-  storageBucket: "mini-instagram-95485.firebasestorage.app",
+  storageBucket: "mini-instagram-95485.appspot.com",  // ✅ FIXED
   messagingSenderId: "426906615408",
   appId: "1:426906615408:web:1ba85f1d00b9c09e083eb5",
   measurementId: "G-V8E6NEGGZD",
@@ -116,6 +116,7 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth();
 const db = getDatabase(app);
 const storage = getStorage();
+
 
 
 // ---------------------------
@@ -297,6 +298,8 @@ function loadStories(){
 
             let firstLine = s.text.split("\n")[0];
 
+            let safeFull = s.text.replace(/`/g, "\\`").replace(/"/g, '&quot;');
+
             let card = document.createElement("div");
             card.className = "storyCard";
 
@@ -307,7 +310,7 @@ function loadStories(){
                 <p id="text_${id}">
                    ${firstLine} 
                    ${s.text.length>firstLine.length ? 
-                      `<span class='expandBtn' onclick="expandStory('${id}','${s.text.replace(/'/g,"\\'")}')">Read more</span>`
+                      `<span class='expandBtn' onclick="expandStory('${id}', \`${safeFull}\`)">Read more</span>`
                       : "" }
                 </p>
 

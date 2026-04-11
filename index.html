@@ -68,7 +68,7 @@ Merge Files <input type="file" id="merge" multiple>
 <!-- DOWNLOAD SYSTEM -->
 <button onclick="startDownload()">⬇ Download Edited Audio</button>
 
-<a id="download" style="display:none;color:#0f0">Download</a>
+<a id="download" style="display:none;color:#0f0">⬇ Download File</a>
 
 <button onclick="openAd()" id="adBtn" style="display:none;color:#0f0">
 ⬇ Download (Watch Ad)
@@ -86,7 +86,6 @@ let audio = new Audio();
 let source, delayNode, gainNode;
 let buffer;
 
-// LOAD AUDIO
 file.onchange = async (e)=>{
     let f = e.target.files[0];
     let url = URL.createObjectURL(f);
@@ -103,7 +102,6 @@ file.onchange = async (e)=>{
     };
 };
 
-// AUDIO GRAPH
 function setupAudio(){
     if(source) source.disconnect();
 
@@ -114,7 +112,6 @@ function setupAudio(){
     source.connect(delayNode).connect(gainNode).connect(audioCtx.destination);
 }
 
-// PLAY
 play.onclick = ()=>{
     audioCtx.resume();
     if(audio.paused){
@@ -126,7 +123,6 @@ play.onclick = ()=>{
     }
 };
 
-// TIMELINE
 audio.ontimeupdate = ()=>{
     let p = (audio.currentTime/audio.duration)*100;
     timeline.value = p;
@@ -137,69 +133,43 @@ timeline.oninput = ()=>{
     audio.currentTime = (timeline.value/100)*audio.duration;
 };
 
-// FORMAT
 function format(s){
     let m=Math.floor(s/60);
     let sec=Math.floor(s%60);
     return m+":"+(sec<10?"0":"")+sec;
 }
 
-// LIVE EFFECTS
 pitch.oninput = ()=> audio.playbackRate = pitch.value;
 speed.oninput = ()=> audio.playbackRate = speed.value;
 echo.oninput = ()=> delayNode.delayTime.value = echo.value;
 reverb.oninput = ()=> gainNode.gain.value = 1 - reverb.value;
 
-// PRESETS
 function preset(type){
-    if(type=="bass"){
-        pitch.value=1;
-        speed.value=1;
-        echo.value=0.1;
-        reverb.value=0.3;
-    }
-    if(type=="podcast"){
-        pitch.value=1;
-        speed.value=1;
-        echo.value=0;
-        reverb.value=0.1;
-    }
-    if(type=="loud"){
-        pitch.value=1.2;
-        speed.value=1;
-        echo.value=0;
-        reverb.value=0;
-    }
+    if(type=="bass"){ pitch.value=1; speed.value=1; echo.value=0.1; reverb.value=0.3; }
+    if(type=="podcast"){ pitch.value=1; speed.value=1; echo.value=0; reverb.value=0.1; }
+    if(type=="loud"){ pitch.value=1.2; speed.value=1; echo.value=0; reverb.value=0; }
 }
 
-// AI NOISE CLEAN
 function noiseClean(){
     let filter = audioCtx.createBiquadFilter();
-    filter.type = "highpass";
-    filter.frequency.value = 1000;
-
+    filter.type="highpass";
+    filter.frequency.value=1000;
     source.disconnect();
     source.connect(filter).connect(audioCtx.destination);
-
     alert("AI Noise Clean Applied ✔");
 }
 
-// TEXT TO SPEECH
 function generateVoice(){
     let text = ttsText.value;
     if(!text) return alert("Enter text");
-
     let speech = new SpeechSynthesisUtterance(text);
-    speech.lang = "en-US";
-    speech.rate = 1;
-
+    speech.lang="en-US";
+    speech.rate=1;
     speechSynthesis.speak(speech);
 }
 
-// SUBTITLE
 function generateSub(){
-    subOutput.innerText =
-    "AI Subtitle (Demo): Example subtitle text.";
+    subOutput.innerText="AI Subtitle Demo text.";
 }
 
 // START DOWNLOAD FLOW
@@ -207,7 +177,8 @@ function startDownload(){
     process();
     setTimeout(()=>{
         document.getElementById("adBtn").style.display="block";
-        alert("Processing done! Click Download (Watch Ad)");
+        document.getElementById("download").style.display="block";
+        alert("Processing done! Step 1: Watch Ad, Step 2: Click Download File");
     },1200);
 }
 
@@ -220,56 +191,41 @@ function openAd(){
 async function process(){
     if(!buffer) return alert("Upload audio");
 
-    let startT = parseFloat(start.value)||0;
-    let endT = parseFloat(end.value)||buffer.duration;
+    let startT=parseFloat(start.value)||0;
+    let endT=parseFloat(end.value)||buffer.duration;
+    let len=(endT-startT)*audioCtx.sampleRate;
 
-    let len = (endT-startT)*audioCtx.sampleRate;
+    let newBuf=audioCtx.createBuffer(buffer.numberOfChannels,len,audioCtx.sampleRate);
 
-    let newBuf = audioCtx.createBuffer(
-        buffer.numberOfChannels,
-        len,
-        audioCtx.sampleRate
-    );
-
-    for(let ch=0; ch<buffer.numberOfChannels; ch++){
+    for(let ch=0;ch<buffer.numberOfChannels;ch++){
         newBuf.getChannelData(ch).set(
-            buffer.getChannelData(ch).slice(
-                startT*audioCtx.sampleRate,
-                endT*audioCtx.sampleRate
-            )
+            buffer.getChannelData(ch).slice(startT*audioCtx.sampleRate,endT*audioCtx.sampleRate)
         );
     }
 
-    let files = merge.files;
+    let files=merge.files;
     if(files.length>0){
         let list=[newBuf];
-
         for(let f of files){
             let arr=await f.arrayBuffer();
             let b=await audioCtx.decodeAudioData(arr);
             list.push(b);
         }
-
-        newBuf = mergeBuffers(list);
+        newBuf=mergeBuffers(list);
     }
 
     downloadFile(newBuf);
 }
 
-// MERGE
 function mergeBuffers(list){
     let len=0;
     list.forEach(b=>len+=b.length);
 
-    let out = audioCtx.createBuffer(
-        list[0].numberOfChannels,
-        len,
-        list[0].sampleRate
-    );
+    let out=audioCtx.createBuffer(list[0].numberOfChannels,len,list[0].sampleRate);
 
     let pos=0;
     for(let b of list){
-        for(let ch=0; ch<b.numberOfChannels; ch++){
+        for(let ch=0;ch<b.numberOfChannels;ch++){
             out.getChannelData(ch).set(b.getChannelData(ch),pos);
         }
         pos+=b.length;
@@ -277,20 +233,15 @@ function mergeBuffers(list){
     return out;
 }
 
-// DOWNLOAD
 function downloadFile(buf){
-    let wav = toWav(buf);
-    let blob = new Blob([wav],{type:"audio/wav"});
-    let url = URL.createObjectURL(blob);
+    let wav=toWav(buf);
+    let blob=new Blob([wav],{type:"audio/wav"});
+    let url=URL.createObjectURL(blob);
 
     download.href=url;
     download.download="edited.wav";
-    download.style.display="none";
-
-    document.getElementById("adBtn").style.display="block";
 }
 
-// WAV
 function toWav(buf){
     let num=buf.numberOfChannels;
     let len=buf.length*num*2+44;
@@ -299,8 +250,7 @@ function toWav(buf){
     let offset=0;
 
     function write(s){
-        for(let i=0;i<s.length;i++)
-            view.setUint8(offset++,s.charCodeAt(i));
+        for(let i=0;i<s.length;i++) view.setUint8(offset++,s.charCodeAt(i));
     }
 
     write("RIFF");

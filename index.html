@@ -1,53 +1,308 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Story App</title>
+<title>Ultimate AI Sound Editor</title>
+
+<script src="https://unpkg.com/wavesurfer.js"></script>
+
 <style>
-body{background:#111;color:white;font-family:Arial;margin:0;padding:20px;}
-.page{max-width:430px;margin:auto;}
-input,textarea{width:100%;padding:10px;border-radius:10px;margin:8px 0;border:none;}
-button{width:100%;padding:12px;border:none;background:#007bff;color:white;border-radius:10px;margin:5px 0;font-weight:bold;}
-.story-card{background:#222;padding:12px;border-radius:8px;margin:10px 0;}
-.story-title{font-size:18px;font-weight:bold;cursor:pointer;}
-.hidden{display:none;}
-.like-btn{background:#444;padding:6px 12px;border-radius:6px;margin-right:8px;}
-.user-tag{font-size:13px;color:#bbb;margin-bottom:6px;}
+body{background:#0f0f0f;color:#fff;font-family:Arial;padding:20px;}
+.card{background:#1a1a1a;padding:15px;margin:10px 0;border-radius:10px;}
+button,input,textarea{width:100%;margin-top:8px;padding:10px;border-radius:5px;}
+button{background:#00e0ff;color:#000;font-weight:bold;}
+#waveform{height:120px;background:#000;}
+.preset{background:#ff9800;}
 </style>
 </head>
 <body>
 
-<div id="authPage" class="page">
-    <h2>Welcome</h2>
+<h1>🔥 Ultimate AI Sound Editor</h1>
 
-    <input id="signupName" placeholder="Full Name" type="text">
-    <input id="signupEmail" placeholder="Email" type="email">
-    <input id="signupPass" placeholder="Password" type="password">
-    <button onclick="signup()">Sign Up</button>
+<input type="file" id="file" accept="audio/*">
 
-    <hr>
+<div id="waveform"></div>
 
-    <input id="loginEmail" placeholder="Email" type="email">
-    <input id="loginPass" placeholder="Password" type="password">
-    <button onclick="login()">Login</button>
+<div class="card">
+<button id="play">▶ Play</button>
+<input type="range" id="timeline" value="0">
+<div><span id="current">0:00</span> / <span id="total">0:00</span></div>
 </div>
 
-<div id="homePage" class="page hidden">
-    <button onclick="logout()">Logout</button>
-
-    <h3>Add Story</h3>
-    <input id="storyTitle" placeholder="Story Title">
-    <textarea id="storyText" placeholder="Write your story"></textarea>
-    <button onclick="sendStory()">Post Story</button>
-
-    <h3>Search</h3>
-    <input id="searchInput" placeholder="Search by title..." oninput="searchStory()">
-
-    <h3>Stories</h3>
-    <div id="storyList"></div>
+<div class="card">
+Pitch <input type="range" id="pitch" min="0.5" max="2" step="0.01" value="1">
+Speed <input type="range" id="speed" min="0.5" max="2" step="0.01" value="1">
+Echo <input type="range" id="echo" min="0" max="1" step="0.05" value="0">
+Reverb <input type="range" id="reverb" min="0" max="1" step="0.05" value="0">
 </div>
 
-<script type="module" defer src="app.js"></script>
+<div class="card">
+<h3>🎛 Presets</h3>
+<button class="preset" onclick="preset('bass')">Bass Boost</button>
+<button class="preset" onclick="preset('podcast')">Podcast</button>
+<button class="preset" onclick="preset('loud')">Loud</button>
+</div>
+
+<div class="card">
+Trim Start <input id="start" type="number">
+Trim End <input id="end" type="number">
+</div>
+
+<div class="card">
+Merge Files <input type="file" id="merge" multiple>
+</div>
+
+<div class="card">
+<h3>🧠 AI Tools</h3>
+<button onclick="noiseClean()">AI Noise Clean</button>
+
+<textarea id="ttsText" placeholder="Enter text for voice"></textarea>
+<button onclick="generateVoice()">Generate Voice</button>
+
+<input type="file" id="subtitleFile" accept="audio/*">
+<button onclick="generateSub()">Auto Subtitle</button>
+
+<p id="subOutput"></p>
+</div>
+
+<button onclick="process()">⬇ Download Edited Audio</button>
+<a id="download" style="display:none;color:#0f0">Download</a>
+
+<script>
+let wavesurfer = WaveSurfer.create({
+    container: '#waveform',
+    waveColor: '#555',
+    progressColor: '#00e0ff'
+});
+
+let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+let audio = new Audio();
+let source, delayNode, gainNode;
+let buffer;
+
+// LOAD AUDIO
+file.onchange = async (e)=>{
+    let f = e.target.files[0];
+    let url = URL.createObjectURL(f);
+    audio.src = url;
+    wavesurfer.load(url);
+
+    let arr = await f.arrayBuffer();
+    buffer = await audioCtx.decodeAudioData(arr);
+
+    setupAudio();
+
+    audio.onloadedmetadata = ()=>{
+        total.innerText = format(audio.duration);
+    };
+};
+
+// AUDIO GRAPH
+function setupAudio(){
+    if(source) source.disconnect();
+
+    source = audioCtx.createMediaElementSource(audio);
+    delayNode = audioCtx.createDelay();
+    gainNode = audioCtx.createGain();
+
+    source.connect(delayNode).connect(gainNode).connect(audioCtx.destination);
+}
+
+// PLAY
+play.onclick = ()=>{
+    audioCtx.resume();
+    if(audio.paused){
+        audio.play();
+        play.innerText="⏸ Pause";
+    }else{
+        audio.pause();
+        play.innerText="▶ Play";
+    }
+};
+
+// TIMELINE
+audio.ontimeupdate = ()=>{
+    let p = (audio.currentTime/audio.duration)*100;
+    timeline.value = p;
+    current.innerText = format(audio.currentTime);
+};
+
+timeline.oninput = ()=>{
+    audio.currentTime = (timeline.value/100)*audio.duration;
+};
+
+// FORMAT
+function format(s){
+    let m=Math.floor(s/60);
+    let sec=Math.floor(s%60);
+    return m+":"+(sec<10?"0":"")+sec;
+}
+
+// LIVE EFFECTS
+pitch.oninput = ()=> audio.playbackRate = pitch.value;
+speed.oninput = ()=> audio.playbackRate = speed.value;
+echo.oninput = ()=> delayNode.delayTime.value = echo.value;
+reverb.oninput = ()=> gainNode.gain.value = 1 - reverb.value;
+
+// PRESETS
+function preset(type){
+    if(type=="bass"){
+        pitch.value=1;
+        speed.value=1;
+        echo.value=0.1;
+        reverb.value=0.3;
+    }
+    if(type=="podcast"){
+        pitch.value=1;
+        speed.value=1;
+        echo.value=0;
+        reverb.value=0.1;
+    }
+    if(type=="loud"){
+        pitch.value=1.2;
+        speed.value=1;
+        echo.value=0;
+        reverb.value=0;
+    }
+}
+
+// AI NOISE CLEAN
+function noiseClean(){
+    let filter = audioCtx.createBiquadFilter();
+    filter.type = "highpass";
+    filter.frequency.value = 1000;
+
+    source.disconnect();
+    source.connect(filter).connect(audioCtx.destination);
+
+    alert("AI Noise Clean Applied ✔");
+}
+
+// TEXT TO SPEECH
+function generateVoice(){
+    let text = ttsText.value;
+    if(!text) return alert("Enter text");
+
+    let speech = new SpeechSynthesisUtterance(text);
+    speech.lang = "en-US";
+    speech.rate = 1;
+
+    speechSynthesis.speak(speech);
+}
+
+// SUBTITLE DEMO
+function generateSub(){
+    subOutput.innerText =
+    "AI Subtitle (Demo):\nThis is sample subtitle.\nUse API for real output.";
+}
+
+// PROCESS + DOWNLOAD
+async function process(){
+    if(!buffer) return alert("Upload audio");
+
+    let startT = parseFloat(start.value)||0;
+    let endT = parseFloat(end.value)||buffer.duration;
+
+    let len = (endT-startT)*audioCtx.sampleRate;
+
+    let newBuf = audioCtx.createBuffer(
+        buffer.numberOfChannels,
+        len,
+        audioCtx.sampleRate
+    );
+
+    for(let ch=0; ch<buffer.numberOfChannels; ch++){
+        newBuf.getChannelData(ch).set(
+            buffer.getChannelData(ch).slice(
+                startT*audioCtx.sampleRate,
+                endT*audioCtx.sampleRate
+            )
+        );
+    }
+
+    let files = merge.files;
+    if(files.length>0){
+        let list=[newBuf];
+
+        for(let f of files){
+            let arr=await f.arrayBuffer();
+            let b=await audioCtx.decodeAudioData(arr);
+            list.push(b);
+        }
+
+        newBuf = mergeBuffers(list);
+    }
+
+    downloadFile(newBuf);
+}
+
+function mergeBuffers(list){
+    let len=0;
+    list.forEach(b=>len+=b.length);
+
+    let out = audioCtx.createBuffer(
+        list[0].numberOfChannels,
+        len,
+        list[0].sampleRate
+    );
+
+    let pos=0;
+    for(let b of list){
+        for(let ch=0; ch<b.numberOfChannels; ch++){
+            out.getChannelData(ch).set(b.getChannelData(ch),pos);
+        }
+        pos+=b.length;
+    }
+    return out;
+}
+
+function downloadFile(buf){
+    let wav = toWav(buf);
+    let blob = new Blob([wav],{type:"audio/wav"});
+    let url = URL.createObjectURL(blob);
+
+    download.href=url;
+    download.download="edited.wav";
+    download.style.display="block";
+    download.innerText="⬇ Download File";
+}
+
+// WAV
+function toWav(buf){
+    let num=buf.numberOfChannels;
+    let len=buf.length*num*2+44;
+    let arr=new ArrayBuffer(len);
+    let view=new DataView(arr);
+    let offset=0;
+
+    function write(s){
+        for(let i=0;i<s.length;i++)
+            view.setUint8(offset++,s.charCodeAt(i));
+    }
+
+    write("RIFF");
+    view.setUint32(offset,len-8,true); offset+=4;
+    write("WAVEfmt ");
+    view.setUint32(offset,16,true); offset+=4;
+    view.setUint16(offset,1,true); offset+=2;
+    view.setUint16(offset,num,true); offset+=2;
+    view.setUint32(offset,buf.sampleRate,true); offset+=4;
+    view.setUint32(offset,buf.sampleRate*2*num,true); offset+=4;
+    view.setUint16(offset,num*2,true); offset+=2;
+    view.setUint16(offset,16,true); offset+=2;
+    write("data");
+    view.setUint32(offset,len-offset-4,true); offset+=4;
+
+    for(let i=0;i<buf.length;i++){
+        for(let ch=0;ch<num;ch++){
+            let sample=buf.getChannelData(ch)[i]*0x7fff;
+            view.setInt16(offset,sample,true);
+            offset+=2;
+        }
+    }
+    return arr;
+}
+</script>
 
 </body>
 </html>

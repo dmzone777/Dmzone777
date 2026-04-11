@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Audio editor tool</title>
+<title>Audio Editor Tool</title>
 
 <script src="https://unpkg.com/wavesurfer.js"></script>
 
@@ -17,7 +17,7 @@ button{background:#00e0ff;color:#000;font-weight:bold;}
 </head>
 <body>
 
-<h1>🔥 Ultimate AI Sound Editor</h1>
+<h1>🎧 Audio Editor</h1>
 
 <input type="file" id="file" accept="audio/*">
 
@@ -65,8 +65,14 @@ Merge Files <input type="file" id="merge" multiple>
 <p id="subOutput"></p>
 </div>
 
-<button onclick="process()">⬇ Download Edited Audio</button>
+<!-- DOWNLOAD SYSTEM -->
+<button onclick="startDownload()">⬇ Download Edited Audio</button>
+
 <a id="download" style="display:none;color:#0f0">Download</a>
+
+<button onclick="openAd()" id="adBtn" style="display:none;color:#0f0">
+⬇ Download (Watch Ad)
+</button>
 
 <script>
 let wavesurfer = WaveSurfer.create({
@@ -190,13 +196,27 @@ function generateVoice(){
     speechSynthesis.speak(speech);
 }
 
-// SUBTITLE DEMO
+// SUBTITLE
 function generateSub(){
     subOutput.innerText =
-    "AI Subtitle (Demo):\nThis is sample subtitle.\nUse API for real output.";
+    "AI Subtitle (Demo): Example subtitle text.";
 }
 
-// PROCESS + DOWNLOAD
+// START DOWNLOAD FLOW
+function startDownload(){
+    process();
+    setTimeout(()=>{
+        document.getElementById("adBtn").style.display="block";
+        alert("Processing done! Click Download (Watch Ad)");
+    },1200);
+}
+
+// LINKVERTISE
+function openAd(){
+    window.open("https://link-center.net/4992280/9gXgp8w81FLT","_blank");
+}
+
+// PROCESS
 async function process(){
     if(!buffer) return alert("Upload audio");
 
@@ -236,6 +256,7 @@ async function process(){
     downloadFile(newBuf);
 }
 
+// MERGE
 function mergeBuffers(list){
     let len=0;
     list.forEach(b=>len+=b.length);
@@ -256,6 +277,7 @@ function mergeBuffers(list){
     return out;
 }
 
+// DOWNLOAD
 function downloadFile(buf){
     let wav = toWav(buf);
     let blob = new Blob([wav],{type:"audio/wav"});
@@ -263,8 +285,9 @@ function downloadFile(buf){
 
     download.href=url;
     download.download="edited.wav";
-    download.style.display="block";
-    download.innerText="⬇ Download File";
+    download.style.display="none";
+
+    document.getElementById("adBtn").style.display="block";
 }
 
 // WAV

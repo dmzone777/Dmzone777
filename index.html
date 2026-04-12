@@ -230,7 +230,7 @@ function toWav(buf){
 
 // 🔥 SERVICE WORKER AUTO REGISTER (READY)
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/Dmzone777/sw.js')
+  navigator.serviceWorker.register('sw.js')
   .then(() => console.log("SW registered"))
   .catch(err => console.log("SW error", err));
 }

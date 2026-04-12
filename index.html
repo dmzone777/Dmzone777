@@ -6,17 +6,6 @@
 
 <script src="https://unpkg.com/wavesurfer.js"></script>
 
-<!-- 🔥 MONETAG SCRIPT (yaha apna original script paste kar) -->
-<script>
-self.options = {
-  "domain": "3nbf4.com",
-  "zoneId": 10863358
-};
-
-self.lary = "";
-importScripts('https://3nbf4.com/act/files/service-worker.min.js?r=sw');
-</script>
-
 <style>
 body{background:#0f0f0f;color:#fff;font-family:Arial;padding:20px;}
 .card{background:#1a1a1a;padding:15px;margin:10px 0;border-radius:10px;}
@@ -76,7 +65,7 @@ Merge Files <input type="file" id="merge" multiple>
 <p id="subOutput"></p>
 </div>
 
-<button onclick="startDownload()">⬇ Download Edited Audio</button>
+<button onclick="process()">⬇ Download Edited Audio</button>
 <a id="download" style="display:none;color:#0f0">⬇ Download File</a>
 
 <script>
@@ -177,14 +166,6 @@ function generateSub(){
     subOutput.innerText="AI Subtitle Demo text.";
 }
 
-function startDownload(){
-    process();
-    setTimeout(()=>{
-        document.getElementById("download").style.display="block";
-        alert("Scroll down and click Download File");
-    },1200);
-}
-
 async function process(){
     if(!buffer) return alert("Upload audio");
 
@@ -210,6 +191,7 @@ function downloadFile(buf){
 
     download.href=url;
     download.download="edited.wav";
+    download.style.display="block";
 }
 
 function toWav(buf){
@@ -246,7 +228,7 @@ function toWav(buf){
     return arr;
 }
 
-// 🔥 SERVICE WORKER REGISTER
+// 🔥 SERVICE WORKER AUTO REGISTER (READY)
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/Dmzone777/sw.js')
   .then(() => console.log("SW registered"))

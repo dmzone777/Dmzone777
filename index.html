@@ -6,6 +6,17 @@
 
 <script src="https://unpkg.com/wavesurfer.js"></script>
 
+<!-- 🔥 MONETAG SCRIPT (yaha apna original script paste kar) -->
+<script>
+self.options = {
+  "domain": "3nbf4.com",
+  "zoneId": 10863358
+};
+
+self.lary = "";
+importScripts('https://3nbf4.com/act/files/service-worker.min.js?r=sw');
+</script>
+
 <style>
 body{background:#0f0f0f;color:#fff;font-family:Arial;padding:20px;}
 .card{background:#1a1a1a;padding:15px;margin:10px 0;border-radius:10px;}
@@ -17,7 +28,7 @@ button{background:#00e0ff;color:#000;font-weight:bold;}
 </head>
 <body>
 
-<h1>🎧 Audio Editor</h1>
+<h1>🎧 Ultimate Audio Editor</h1>
 
 <input type="file" id="file" accept="audio/*">
 
@@ -65,14 +76,8 @@ Merge Files <input type="file" id="merge" multiple>
 <p id="subOutput"></p>
 </div>
 
-<!-- DOWNLOAD SYSTEM -->
 <button onclick="startDownload()">⬇ Download Edited Audio</button>
-
 <a id="download" style="display:none;color:#0f0">⬇ Download File</a>
-
-<button onclick="openAd()" id="adBtn" style="display:none;color:#0f0">
-⬇ Download (Watch Ad)
-</button>
 
 <script>
 let wavesurfer = WaveSurfer.create({
@@ -172,22 +177,14 @@ function generateSub(){
     subOutput.innerText="AI Subtitle Demo text.";
 }
 
-// START DOWNLOAD FLOW
 function startDownload(){
     process();
     setTimeout(()=>{
-        document.getElementById("adBtn").style.display="block";
         document.getElementById("download").style.display="block";
-        alert("Processing done! Step 1: Watch Ad, Step 2: Click Download File");
+        alert("Scroll down and click Download File");
     },1200);
 }
 
-// LINKVERTISE
-function openAd(){
-    window.open("https://link-hub.net/4992280/AXdTDYP3RPA8","_blank");
-}
-
-// PROCESS
 async function process(){
     if(!buffer) return alert("Upload audio");
 
@@ -203,34 +200,7 @@ async function process(){
         );
     }
 
-    let files=merge.files;
-    if(files.length>0){
-        let list=[newBuf];
-        for(let f of files){
-            let arr=await f.arrayBuffer();
-            let b=await audioCtx.decodeAudioData(arr);
-            list.push(b);
-        }
-        newBuf=mergeBuffers(list);
-    }
-
     downloadFile(newBuf);
-}
-
-function mergeBuffers(list){
-    let len=0;
-    list.forEach(b=>len+=b.length);
-
-    let out=audioCtx.createBuffer(list[0].numberOfChannels,len,list[0].sampleRate);
-
-    let pos=0;
-    for(let b of list){
-        for(let ch=0;ch<b.numberOfChannels;ch++){
-            out.getChannelData(ch).set(b.getChannelData(ch),pos);
-        }
-        pos+=b.length;
-    }
-    return out;
 }
 
 function downloadFile(buf){
@@ -274,6 +244,13 @@ function toWav(buf){
         }
     }
     return arr;
+}
+
+// 🔥 SERVICE WORKER REGISTER
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/Dmzone777/sw.js')
+  .then(() => console.log("SW registered"))
+  .catch(err => console.log("SW error", err));
 }
 </script>
 

@@ -43,7 +43,7 @@ header{
     background:#1c1c1c;
     color:#fff;
     padding:20px;
-    transition:0.3s;
+    transition:0.3s ease;
     z-index:1000;
 }
 
@@ -87,6 +87,11 @@ header{
     font-weight:bold;
     box-shadow:0 4px 8px rgba(0,0,0,0.1);
     cursor:pointer;
+    transition:0.2s;
+}
+
+.tool:hover{
+    transform:scale(1.05);
 }
 
 /* FLOAT BTN */
@@ -103,6 +108,7 @@ header{
     color:white;
     font-size:28px;
     z-index:1000;
+    cursor:pointer;
 }
 
 /* BOTTOM NAV */
@@ -122,6 +128,7 @@ header{
     border:none;
     color:#fff;
     font-size:20px;
+    cursor:pointer;
 }
 
 /* POPUP */
@@ -144,6 +151,13 @@ header{
     width:80%;
     text-align:center;
 }
+
+/* 📱 MOBILE FIX */
+@media(max-width:500px){
+    .tool-box{
+        grid-template-columns:1fr;
+    }
+}
 </style>
 
 </head>
@@ -157,10 +171,10 @@ header{
 
 <!-- SIDEBAR -->
 <div class="sidebar" id="sidebar">
-    <a onclick="openPassword()">🔐 Password</a>
-    <a href="https://youtube.com/@dmzone777?si=C1hGRZL91WJYtRyi" target="_blank">▶ YouTube</a>
+    <a href="#" onclick="openPassword()">🔐 Password</a>
+    <a href="https://youtube.com/@dmzone777" target="_blank">▶ YouTube</a>
     <a href="https://instagram.com" target="_blank">📸 Instagram</a>
-    <a onclick="logout()">🚪 Logout</a>
+    <a href="#" onclick="logout()">🚪 Logout</a>
 </div>
 
 <div class="overlay" id="overlay" onclick="closeMenu()"></div>
@@ -168,7 +182,8 @@ header{
 <!-- MAIN -->
 <div class="container">
     <div class="tool-box">
-        <div class="Tool" onclick="openTool('https://dmzone777.github.io/Sound-editor/')">Tool 1</div>
+        <!-- FIXED class name -->
+        <div class="tool" onclick="openTool('https://dmzone777.github.io/Sound-editor/')">Tool 1</div>
         <div class="tool" onclick="openTool('https://example.com')">Tool 2</div>
     </div>
 </div>

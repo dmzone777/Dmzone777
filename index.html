@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Tool Zone</title>
+<title>DM Zone</title>
 
 <style>
 *{
@@ -43,16 +43,17 @@ header{
     background:#1c1c1c;
     color:#fff;
     padding:20px;
-    transition:0.3s ease;
+    transition:0.3s;
     z-index:1000;
 }
 
 .sidebar a{
     display:block;
-    padding:12px;
+    padding:14px;
     border-bottom:1px solid #333;
     color:white;
     text-decoration:none;
+    font-size:15px;
 }
 
 /* OVERLAY */
@@ -84,14 +85,15 @@ header{
     padding:20px;
     border-radius:12px;
     text-align:center;
-    font-weight:bold;
+    font-weight:600;
+    font-size:15px;
     box-shadow:0 4px 8px rgba(0,0,0,0.1);
     cursor:pointer;
     transition:0.2s;
 }
 
-.tool:hover{
-    transform:scale(1.05);
+.tool:active{
+    transform:scale(0.95);
 }
 
 /* FLOAT BTN */
@@ -108,7 +110,7 @@ header{
     color:white;
     font-size:28px;
     z-index:1000;
-    cursor:pointer;
+    box-shadow:0 5px 12px rgba(0,0,0,0.3);
 }
 
 /* BOTTOM NAV */
@@ -128,7 +130,6 @@ header{
     border:none;
     color:#fff;
     font-size:20px;
-    cursor:pointer;
 }
 
 /* POPUP */
@@ -151,13 +152,6 @@ header{
     width:80%;
     text-align:center;
 }
-
-/* 📱 MOBILE FIX */
-@media(max-width:500px){
-    .tool-box{
-        grid-template-columns:1fr;
-    }
-}
 </style>
 
 </head>
@@ -171,10 +165,10 @@ header{
 
 <!-- SIDEBAR -->
 <div class="sidebar" id="sidebar">
-    <a href="#" onclick="openPassword()">🔐 Password</a>
-    <a href="https://youtube.com/@dmzone777" target="_blank">▶ YouTube</a>
+    <a onclick="openPassword()">🔐 Password</a>
+    <a href="https://youtube.com/@dmzone777?si=C1hGRZL91WJYtRyi" target="_blank">▶ YouTube</a>
     <a href="https://instagram.com" target="_blank">📸 Instagram</a>
-    <a href="#" onclick="logout()">🚪 Logout</a>
+    <a onclick="logout()">🚪 Logout</a>
 </div>
 
 <div class="overlay" id="overlay" onclick="closeMenu()"></div>
@@ -182,9 +176,13 @@ header{
 <!-- MAIN -->
 <div class="container">
     <div class="tool-box">
-        <!-- FIXED class name -->
-        <div class="tool" onclick="openTool('https://dmzone777.github.io/Sound-editor/')">Tool 1</div>
-        <div class="tool" onclick="openTool('https://example.com')">Tool 2</div>
+        <div class="tool" onclick="openTool('https://dmzone777.github.io/Sound-editor/')">
+            🎵 Sound Editor
+        </div>
+
+        <div class="tool" onclick="openTool('https://example.com')">
+            ⚙️ Tool 2
+        </div>
     </div>
 </div>
 

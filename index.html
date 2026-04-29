@@ -2,238 +2,243 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Audio Editor Tool</title>
-
-<script src="https://unpkg.com/wavesurfer.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tool Zone</title>
 
 <style>
-body{background:#0f0f0f;color:#fff;font-family:Arial;padding:20px;}
-.card{background:#1a1a1a;padding:15px;margin:10px 0;border-radius:10px;}
-button,input,textarea{width:100%;margin-top:8px;padding:10px;border-radius:5px;}
-button{background:#00e0ff;color:#000;font-weight:bold;}
-#waveform{height:120px;background:#000;}
-.preset{background:#ff9800;}
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+body{
+    font-family:sans-serif;
+    background:#f4f4f4;
+}
+
+/* HEADER */
+header{
+    height:55px;
+    background:#111;
+    color:#fff;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:0 15px;
+}
+
+.menu{
+    font-size:24px;
+    cursor:pointer;
+}
+
+/* SIDEBAR */
+.sidebar{
+    position:fixed;
+    top:0;
+    left:-100%;
+    width:70%;
+    height:100%;
+    background:#1c1c1c;
+    color:#fff;
+    padding:20px;
+    transition:0.3s;
+    z-index:1000;
+}
+
+.sidebar a{
+    display:block;
+    padding:12px;
+    border-bottom:1px solid #333;
+    color:white;
+    text-decoration:none;
+}
+
+/* OVERLAY */
+.overlay{
+    position:fixed;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+    background:rgba(0,0,0,0.5);
+    display:none;
+    z-index:999;
+}
+
+/* MAIN */
+.container{
+    padding:15px;
+}
+
+/* TOOLS */
+.tool-box{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:12px;
+}
+
+.tool{
+    background:#fff;
+    padding:20px;
+    border-radius:12px;
+    text-align:center;
+    font-weight:bold;
+    box-shadow:0 4px 8px rgba(0,0,0,0.1);
+    cursor:pointer;
+}
+
+/* FLOAT BTN */
+.add{
+    position:fixed;
+    bottom:70px;
+    left:50%;
+    transform:translateX(-50%);
+    width:60px;
+    height:60px;
+    border-radius:50%;
+    border:none;
+    background:#ff3b3b;
+    color:white;
+    font-size:28px;
+    z-index:1000;
+}
+
+/* BOTTOM NAV */
+.bottom{
+    position:fixed;
+    bottom:0;
+    width:100%;
+    height:55px;
+    background:#111;
+    display:flex;
+    justify-content:space-around;
+    align-items:center;
+}
+
+.bottom button{
+    background:none;
+    border:none;
+    color:#fff;
+    font-size:20px;
+}
+
+/* POPUP */
+.popup{
+    position:fixed;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+    display:none;
+    justify-content:center;
+    align-items:center;
+    background:rgba(0,0,0,0.6);
+}
+
+.popup-box{
+    background:#fff;
+    padding:20px;
+    border-radius:12px;
+    width:80%;
+    text-align:center;
+}
 </style>
+
 </head>
+
 <body>
 
-<h1>🎧 Ultimate Audio Editor</h1>
+<header>
+    <div class="menu" onclick="openMenu()">☰</div>
+    <div>Tool Zone</div>
+</header>
 
-<input type="file" id="file" accept="audio/*">
-
-<div id="waveform"></div>
-
-<div class="card">
-<button id="play">▶ Play</button>
-<input type="range" id="timeline" value="0">
-<div><span id="current">0:00</span> / <span id="total">0:00</span></div>
+<!-- SIDEBAR -->
+<div class="sidebar" id="sidebar">
+    <a onclick="openPassword()">🔐 Password</a>
+    <a href="https://youtube.com" target="_blank">▶ YouTube</a>
+    <a href="https://instagram.com" target="_blank">📸 Instagram</a>
+    <a onclick="logout()">🚪 Logout</a>
 </div>
 
-<div class="card">
-Pitch <input type="range" id="pitch" min="0.5" max="2" step="0.01" value="1">
-Speed <input type="range" id="speed" min="0.5" max="2" step="0.01" value="1">
-Echo <input type="range" id="echo" min="0" max="1" step="0.05" value="0">
-Reverb <input type="range" id="reverb" min="0" max="1" step="0.05" value="0">
+<div class="overlay" id="overlay" onclick="closeMenu()"></div>
+
+<!-- MAIN -->
+<div class="container">
+    <div class="tool-box">
+        <div class="tool" onclick="openTool('https://example.com')">Tool 1</div>
+        <div class="tool" onclick="openTool('https://example.com')">Tool 2</div>
+    </div>
 </div>
 
-<div class="card">
-<h3>🎛 Presets</h3>
-<button class="preset" onclick="preset('bass')">Bass Boost</button>
-<button class="preset" onclick="preset('podcast')">Podcast</button>
-<button class="preset" onclick="preset('loud')">Loud</button>
+<!-- FLOAT -->
+<button class="add" onclick="openPopup()">+</button>
+
+<!-- POPUP -->
+<div class="popup" id="popup">
+    <div class="popup-box">
+        <h3>Coming Soon 🚀</h3>
+        <br>
+        <button onclick="closePopup()">Close</button>
+    </div>
 </div>
 
-<div class="card">
-Trim Start <input id="start" type="number">
-Trim End <input id="end" type="number">
+<!-- BOTTOM NAV -->
+<div class="bottom">
+    <button onclick="goHome()">🏠</button>
+    <button onclick="openPopup()">➕</button>
+    <button onclick="profile()">👤</button>
 </div>
-
-<div class="card">
-Merge Files <input type="file" id="merge" multiple>
-</div>
-
-<div class="card">
-<h3>🧠 AI Tools</h3>
-<button onclick="noiseClean()">AI Noise Clean</button>
-
-<textarea id="ttsText" placeholder="Enter text for voice"></textarea>
-<button onclick="generateVoice()">Generate Voice</button>
-
-<input type="file" id="subtitleFile" accept="audio/*">
-<button onclick="generateSub()">Auto Subtitle</button>
-
-<p id="subOutput"></p>
-</div>
-
-<button onclick="process()">⬇ Download Edited Audio</button>
-<a id="download" style="display:none;color:#0f0">⬇ Download File</a>
 
 <script>
-let wavesurfer = WaveSurfer.create({
-    container: '#waveform',
-    waveColor: '#555',
-    progressColor: '#00e0ff'
-});
 
-let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-let audio = new Audio();
-let source, delayNode, gainNode;
-let buffer;
-
-file.onchange = async (e)=>{
-    let f = e.target.files[0];
-    let url = URL.createObjectURL(f);
-    audio.src = url;
-    wavesurfer.load(url);
-
-    let arr = await f.arrayBuffer();
-    buffer = await audioCtx.decodeAudioData(arr);
-
-    setupAudio();
-
-    audio.onloadedmetadata = ()=>{
-        total.innerText = format(audio.duration);
-    };
-};
-
-function setupAudio(){
-    if(source) source.disconnect();
-
-    source = audioCtx.createMediaElementSource(audio);
-    delayNode = audioCtx.createDelay();
-    gainNode = audioCtx.createGain();
-
-    source.connect(delayNode).connect(gainNode).connect(audioCtx.destination);
+/* MENU */
+function openMenu(){
+    document.getElementById("sidebar").style.left="0";
+    document.getElementById("overlay").style.display="block";
 }
 
-play.onclick = ()=>{
-    audioCtx.resume();
-    if(audio.paused){
-        audio.play();
-        play.innerText="⏸ Pause";
-    }else{
-        audio.pause();
-        play.innerText="▶ Play";
-    }
-};
-
-audio.ontimeupdate = ()=>{
-    let p = (audio.currentTime/audio.duration)*100;
-    timeline.value = p;
-    current.innerText = format(audio.currentTime);
-};
-
-timeline.oninput = ()=>{
-    audio.currentTime = (timeline.value/100)*audio.duration;
-};
-
-function format(s){
-    let m=Math.floor(s/60);
-    let sec=Math.floor(s%60);
-    return m+":"+(sec<10?"0":"")+sec;
+function closeMenu(){
+    document.getElementById("sidebar").style.left="-100%";
+    document.getElementById("overlay").style.display="none";
 }
 
-pitch.oninput = ()=> audio.playbackRate = pitch.value;
-speed.oninput = ()=> audio.playbackRate = speed.value;
-echo.oninput = ()=> delayNode.delayTime.value = echo.value;
-reverb.oninput = ()=> gainNode.gain.value = 1 - reverb.value;
-
-function preset(type){
-    if(type=="bass"){ pitch.value=1; speed.value=1; echo.value=0.1; reverb.value=0.3; }
-    if(type=="podcast"){ pitch.value=1; speed.value=1; echo.value=0; reverb.value=0.1; }
-    if(type=="loud"){ pitch.value=1.2; speed.value=1; echo.value=0; reverb.value=0; }
+/* TOOL */
+function openTool(link){
+    window.open(link, "_blank");
 }
 
-function noiseClean(){
-    let filter = audioCtx.createBiquadFilter();
-    filter.type="highpass";
-    filter.frequency.value=1000;
-    source.disconnect();
-    source.connect(filter).connect(audioCtx.destination);
-    alert("AI Noise Clean Applied ✔");
+/* PASSWORD */
+function openPassword(){
+    window.open("password.html","_blank");
 }
 
-function generateVoice(){
-    let text = ttsText.value;
-    if(!text) return alert("Enter text");
-    let speech = new SpeechSynthesisUtterance(text);
-    speech.lang="en-US";
-    speech.rate=1;
-    speechSynthesis.speak(speech);
+/* LOGOUT */
+function logout(){
+    alert("Logout abhi working nahi hai");
 }
 
-function generateSub(){
-    subOutput.innerText="AI Subtitle Demo text.";
+/* PROFILE */
+function profile(){
+    alert("Profile coming soon");
 }
 
-async function process(){
-    if(!buffer) return alert("Upload audio");
-
-    let startT=parseFloat(start.value)||0;
-    let endT=parseFloat(end.value)||buffer.duration;
-    let len=(endT-startT)*audioCtx.sampleRate;
-
-    let newBuf=audioCtx.createBuffer(buffer.numberOfChannels,len,audioCtx.sampleRate);
-
-    for(let ch=0;ch<buffer.numberOfChannels;ch++){
-        newBuf.getChannelData(ch).set(
-            buffer.getChannelData(ch).slice(startT*audioCtx.sampleRate,endT*audioCtx.sampleRate)
-        );
-    }
-
-    downloadFile(newBuf);
+/* HOME */
+function goHome(){
+    location.reload();
 }
 
-function downloadFile(buf){
-    let wav=toWav(buf);
-    let blob=new Blob([wav],{type:"audio/wav"});
-    let url=URL.createObjectURL(blob);
-
-    download.href=url;
-    download.download="edited.wav";
-    download.style.display="block";
+/* POPUP */
+function openPopup(){
+    document.getElementById("popup").style.display="flex";
 }
 
-function toWav(buf){
-    let num=buf.numberOfChannels;
-    let len=buf.length*num*2+44;
-    let arr=new ArrayBuffer(len);
-    let view=new DataView(arr);
-    let offset=0;
-
-    function write(s){
-        for(let i=0;i<s.length;i++) view.setUint8(offset++,s.charCodeAt(i));
-    }
-
-    write("RIFF");
-    view.setUint32(offset,len-8,true); offset+=4;
-    write("WAVEfmt ");
-    view.setUint32(offset,16,true); offset+=4;
-    view.setUint16(offset,1,true); offset+=2;
-    view.setUint16(offset,num,true); offset+=2;
-    view.setUint32(offset,buf.sampleRate,true); offset+=4;
-    view.setUint32(offset,buf.sampleRate*2*num,true); offset+=4;
-    view.setUint16(offset,num*2,true); offset+=2;
-    view.setUint16(offset,16,true); offset+=2;
-    write("data");
-    view.setUint32(offset,len-offset-4,true); offset+=4;
-
-    for(let i=0;i<buf.length;i++){
-        for(let ch=0;ch<num;ch++){
-            let sample=buf.getChannelData(ch)[i]*0x7fff;
-            view.setInt16(offset,sample,true);
-            offset+=2;
-        }
-    }
-    return arr;
+function closePopup(){
+    document.getElementById("popup").style.display="none";
 }
 
-// 🔥 SERVICE WORKER AUTO REGISTER (READY)
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js')
-  .then(() => console.log("SW registered"))
-  .catch(err => console.log("SW error", err));
-}
 </script>
 
 </body>

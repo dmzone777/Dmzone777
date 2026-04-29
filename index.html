@@ -6,154 +6,86 @@
 <title>DM Zone</title>
 
 <style>
-*{
-    margin:0;
-    padding:0;
-    box-sizing:border-box;
-}
-
-body{
-    font-family:sans-serif;
-    background:#f4f4f4;
-}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:sans-serif;background:#f4f4f4;}
 
 /* HEADER */
 header{
-    height:55px;
-    background:#111;
-    color:#fff;
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    padding:0 15px;
+    height:55px;background:#111;color:#fff;
+    display:flex;align-items:center;justify-content:space-between;padding:0 15px;
 }
 
-.menu{
-    font-size:24px;
-    cursor:pointer;
-}
+.menu{font-size:24px;cursor:pointer;}
 
 /* SIDEBAR */
 .sidebar{
-    position:fixed;
-    top:0;
-    left:-100%;
-    width:70%;
-    height:100%;
-    background:#1c1c1c;
-    color:#fff;
-    padding:20px;
-    transition:0.3s;
-    z-index:1000;
+    position:fixed;top:0;left:-100%;
+    width:70%;height:100%;
+    background:#1c1c1c;color:#fff;
+    padding:20px;transition:0.3s;z-index:1000;
 }
-
 .sidebar a{
-    display:block;
-    padding:14px;
+    display:block;padding:14px;
     border-bottom:1px solid #333;
-    color:white;
-    text-decoration:none;
-    font-size:15px;
+    color:white;text-decoration:none;
 }
 
 /* OVERLAY */
 .overlay{
-    position:fixed;
-    top:0;
-    left:0;
-    width:100%;
-    height:100%;
+    position:fixed;top:0;left:0;
+    width:100%;height:100%;
     background:rgba(0,0,0,0.5);
-    display:none;
-    z-index:999;
+    display:none;z-index:999;
 }
 
 /* MAIN */
-.container{
-    padding:15px;
-}
-
-/* TOOLS */
+.container{padding:15px;}
 .tool-box{
     display:grid;
     grid-template-columns:1fr 1fr;
     gap:12px;
 }
-
 .tool{
-    background:#fff;
-    padding:20px;
-    border-radius:12px;
-    text-align:center;
-    font-weight:600;
-    font-size:15px;
+    background:#fff;padding:20px;border-radius:12px;
+    text-align:center;font-weight:600;
     box-shadow:0 4px 8px rgba(0,0,0,0.1);
-    cursor:pointer;
-    transition:0.2s;
-}
-
-.tool:active{
-    transform:scale(0.95);
 }
 
 /* FLOAT BTN */
 .add{
-    position:fixed;
-    bottom:70px;
-    left:50%;
+    position:fixed;bottom:70px;left:50%;
     transform:translateX(-50%);
-    width:60px;
-    height:60px;
-    border-radius:50%;
-    border:none;
-    background:#ff3b3b;
-    color:white;
-    font-size:28px;
-    z-index:1000;
-    box-shadow:0 5px 12px rgba(0,0,0,0.3);
+    width:60px;height:60px;border-radius:50%;
+    border:none;background:#ff3b3b;color:white;font-size:28px;
 }
 
-/* BOTTOM NAV */
+/* BOTTOM */
 .bottom{
-    position:fixed;
-    bottom:0;
-    width:100%;
-    height:55px;
-    background:#111;
-    display:flex;
-    justify-content:space-around;
-    align-items:center;
+    position:fixed;bottom:0;width:100%;
+    height:55px;background:#111;
+    display:flex;justify-content:space-around;align-items:center;
 }
-
 .bottom button{
-    background:none;
-    border:none;
-    color:#fff;
-    font-size:20px;
+    background:none;border:none;color:#fff;font-size:20px;
 }
 
-/* POPUP */
-.popup{
-    position:fixed;
-    top:0;
-    left:0;
-    width:100%;
-    height:100%;
-    display:none;
-    justify-content:center;
-    align-items:center;
+/* LOGIN BOX */
+.login-box{
+    position:fixed;top:0;left:0;
+    width:100%;height:100%;
     background:rgba(0,0,0,0.6);
+    display:none;justify-content:center;align-items:center;
 }
-
-.popup-box{
-    background:#fff;
-    padding:20px;
-    border-radius:12px;
-    width:80%;
-    text-align:center;
+.login{
+    background:#fff;padding:20px;border-radius:10px;width:80%;
+}
+.login input{
+    width:100%;padding:10px;margin:8px 0;
+}
+.login button{
+    width:100%;padding:10px;margin-top:5px;
 }
 </style>
-
 </head>
 
 <body>
@@ -179,7 +111,6 @@ header{
         <div class="tool" onclick="openTool('https://dmzone777.github.io/Sound-editor/')">
             🎵 Sound Editor
         </div>
-
         <div class="tool" onclick="openTool('https://example.com')">
             ⚙️ Tool 2
         </div>
@@ -189,68 +120,100 @@ header{
 <!-- FLOAT -->
 <button class="add" onclick="openPopup()">+</button>
 
-<!-- POPUP -->
-<div class="popup" id="popup">
-    <div class="popup-box">
-        <h3>Coming Soon 🚀</h3>
-        <br>
-        <button onclick="closePopup()">Close</button>
+<!-- LOGIN POPUP -->
+<div class="login-box" id="loginBox">
+    <div class="login">
+        <h3 id="userText">Login</h3>
+        <input type="email" id="email" placeholder="Email">
+        <input type="password" id="password" placeholder="Password">
+
+        <button onclick="signup()">Sign Up</button>
+        <button onclick="login()">Login</button>
+        <button onclick="logout()">Logout</button>
+        <button onclick="closeLogin()">Close</button>
     </div>
 </div>
 
-<!-- BOTTOM NAV -->
+<!-- BOTTOM -->
 <div class="bottom">
     <button onclick="goHome()">🏠</button>
     <button onclick="openPopup()">➕</button>
-    <button onclick="profile()">👤</button>
+    <button onclick="openLogin()">👤</button>
 </div>
 
-<script>
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } 
+from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDcZnUuqjD7lDHLj65V-f3E75w4DsSFQ1s",
+  authDomain: "mini-instagram-2.firebaseapp.com",
+  projectId: "mini-instagram-2"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
 
 /* MENU */
-function openMenu(){
-    document.getElementById("sidebar").style.left="0";
-    document.getElementById("overlay").style.display="block";
+window.openMenu = ()=>{
+    sidebar.style.left="0";
+    overlay.style.display="block";
+}
+window.closeMenu = ()=>{
+    sidebar.style.left="-100%";
+    overlay.style.display="none";
 }
 
-function closeMenu(){
-    document.getElementById("sidebar").style.left="-100%";
-    document.getElementById("overlay").style.display="none";
+/* LOGIN UI */
+window.openLogin = ()=>{
+    loginBox.style.display="flex";
+}
+window.closeLogin = ()=>{
+    loginBox.style.display="none";
 }
 
-/* TOOL */
-function openTool(link){
-    window.open(link, "_blank");
+/* AUTH */
+window.signup = ()=>{
+    createUserWithEmailAndPassword(auth,email.value,password.value)
+    .then(()=>alert("Account Created ✅"))
+    .catch(e=>alert(e.message));
 }
 
-/* PASSWORD */
-function openPassword(){
-    window.open("password.html","_blank");
+window.login = ()=>{
+    signInWithEmailAndPassword(auth,email.value,password.value)
+    .then(()=>alert("Login Success ✅"))
+    .catch(e=>alert(e.message));
 }
 
-/* LOGOUT */
-function logout(){
-    alert("Logout abhi working nahi hai");
+window.logout = ()=>{
+    signOut(auth).then(()=>alert("Logged Out ✅"));
 }
 
-/* PROFILE */
-function profile(){
-    alert("Profile coming soon");
+/* AUTO LOGIN */
+onAuthStateChanged(auth,(user)=>{
+    if(user){
+        userText.innerText = "Logged in as: " + user.email;
+    }else{
+        userText.innerText = "Login";
+    }
+});
+
+/* TOOL LOCK */
+window.openTool = (link)=>{
+    if(auth.currentUser){
+        window.open(link,"_blank");
+    }else{
+        alert("Login required ❌");
+        openLogin();
+    }
 }
 
-/* HOME */
-function goHome(){
-    location.reload();
-}
-
-/* POPUP */
-function openPopup(){
-    document.getElementById("popup").style.display="flex";
-}
-
-function closePopup(){
-    document.getElementById("popup").style.display="none";
-}
+/* OTHER */
+window.goHome = ()=>location.reload();
+window.openPassword = ()=>alert("Coming Soon");
+window.openPopup = ()=>alert("Coming Soon");
 
 </script>
 

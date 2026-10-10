@@ -1,1 +1,311 @@
 
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LinkChat</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:#0b141a;color:#e9edef}
+header{background:#202c33;padding:15px;display:flex;align-items:center;justify-content:space-between}
+header h2{margin:0;color:#25d366}
+button,.filebtn{border:0;border-radius:8px;padding:10px 13px;background:#25d366;color:#062b1b;font-weight:bold;cursor:pointer}
+input{background:#202c33;color:white;border:1px solid #3b4a54;border-radius:8px;padding:12px;min-width:0}
+#setup{padding:18px;max-width:600px;margin:auto}
+#setup input{width:100%;margin:7px 0 12px}
+#chat{display:none;max-width:850px;margin:auto;height:calc(100dvh - 60px);flex-direction:column}
+#roombar{padding:12px;background:#202c33;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+#messages{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px}
+.msg{background:#202c33;padding:10px 12px;border-radius:10px;max-width:85%;overflow-wrap:anywhere;align-self:flex-start}
+.msg.mine{background:#005c4b;align-self:flex-end}
+.msg small{display:block;color:#aebac1;margin-bottom:5px}
+.msg img,.msg video{max-width:100%;max-height:250px;border-radius:8px}
+.msg a{color:#8bd8ff}
+#composer{display:flex;gap:7px;padding:10px;background:#202c33;align-items:center}
+#messageInput{flex:1;width:100%}
+#status{font-size:13px;color:#b6c7ce}
+#game{padding:12px;background:#182229;text-align:center}
+#game button{margin:3px}
+#gameScore{font-size:18px;margin:8px}
+@media(max-width:500px){
+ #chat{height:calc(100dvh - 45px)}
+ #composer{gap:5px;padding:7px}
+ #composer button{padding:10px 9px}
+ .msg{max-width:92%}
+}
+</style>
+</head>
+<body>
+<header>
+  <h2>LinkChat</h2>
+  <span>💬 Connect & Chat</span>
+</header>
+
+<section id="setup">
+  <h3>Join a chat room</h3>
+  <label for="username">Your nickname</label>
+  <input id="username" maxlength="25" placeholder="Enter nickname">
+  <label for="roomInput">Room name</label>
+  <input id="roomInput" maxlength="40" placeholder="Example: friends123">
+  <button id="joinBtn">Join Room</button>
+  <p>Share the same room name with friends to chat together.</p>
+  <p id="setupStatus"></p>
+</section>
+
+<main id="chat">
+  <div id="roombar">
+    <strong id="roomTitle">Room</strong>
+    <button id="shareBtn">Share Room</button>
+    <button id="leaveBtn">Leave</button>
+    <span id="status">Connecting…</span>
+  </div>
+
+  <div id="messages" aria-live="polite"></div>
+
+  <div id="game">
+    <strong>🎮 Shared Click Game</strong>
+    <div id="gameScore">Room score: 0</div>
+    <button id="tapBtn">+1 Tap</button>
+    <button id="resetGameBtn">Reset score</button>
+  </div>
+
+  <div id="composer">
+    <input id="fileInput" type="file" hidden>
+    <button id="fileBtn" title="Attach a file">📎</button>
+    <input id="messageInput" maxlength="2000"
+           placeholder="Type a message…">
+    <button id="sendBtn">Send</button>
+  </div>
+</main>
+
+<script type="module">
+import { initializeApp } from
+  "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
+
+import {
+  getAuth,
+  signInAnonymously
+} from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
+
+import {
+  getDatabase,
+  ref,
+  push,
+  set,
+  onValue,
+  onChildAdded,
+  onDisconnect,
+  serverTimestamp,
+  runTransaction
+} from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
+
+/* Apne Firebase project ki web config yahan paste karo. */
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "mini-instagram-95485.firebaseapp.com",
+  databaseURL: "https://mini-instagram-95485-default-rtdb.firebaseio.com",
+  projectId: "mini-instagram-95485",
+  storageBucket: "mini-instagram-95485.firebasestorage.app",
+  messagingSenderId: "426906615408",
+  appId: "YOUR_APP_ID"
+};
+
+const $ = id => document.getElementById(id);
+
+let db, auth, me, room = "";
+let stopMessages = null;
+let stopPresence = null;
+let stopScore = null;
+let seenMessageIds = new Set();
+
+function showStatus(text) {
+  $("status").textContent = text;
+}
+
+function cleanRoom(value) {
+  return value.trim().replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 40);
+}
+
+function addMessage(id, data) {
+  if (seenMessageIds.has(id)) return;
+  seenMessageIds.add(id);
+
+  const box = document.createElement("div");
+  box.className = "msg" + (data.uid === me.uid ? " mine" : "");
+
+  const name = document.createElement("small");
+  name.textContent = data.name || "Guest";
+  box.appendChild(name);
+
+  if (data.text) {
+    const text = document.createElement("div");
+    text.textContent = data.text;
+    box.appendChild(text);
+  }
+
+  $("messages").appendChild(box);
+  $("messages").scrollTop = $("messages").scrollHeight;
+}
+
+async function joinRoom() {
+  const name = $("username").value.trim().slice(0, 25);
+  const roomName = cleanRoom($("roomInput").value);
+
+  if (!name || !roomName) {
+    $("setupStatus").textContent =
+      "Nickname aur room name dono bharo.";
+    return;
+  }
+
+  $("setupStatus").textContent = "Connecting…";
+  $("joinBtn").disabled = true;
+
+  try {
+    if (!auth.currentUser) {
+      await signInAnonymously(auth);
+    }
+
+    me = auth.currentUser;
+    room = roomName;
+
+    $("roomTitle").textContent = "Room: " + room;
+    $("setup").style.display = "none";
+    $("chat").style.display = "flex";
+
+    const myPresence = ref(db, `rooms/${room}/presence/${me.uid}`);
+    const connectedRef = ref(db, ".info/connected");
+
+    stopPresence = onValue(connectedRef, async snap => {
+      if (snap.val() === true) {
+        await onDisconnect(myPresence).remove();
+        await set(myPresence, {
+          name,
+          online: true,
+          lastSeen: serverTimestamp()
+        });
+      }
+    });
+
+    const presenceRef = ref(db, `rooms/${room}/presence`);
+    onValue(presenceRef, snap => {
+      const people = snap.val() || {};
+      const count = Object.values(people)
+        .filter(person => person.online).length;
+      showStatus(`${count} online`);
+    });
+
+    const messagesRef = ref(db, `rooms/${room}/messages`);
+    stopMessages = onChildAdded(messagesRef, snap => {
+      addMessage(snap.key, snap.val());
+    });
+
+    const scoreRef = ref(db, `rooms/${room}/game/score`);
+    stopScore = onValue(scoreRef, snap => {
+      $("gameScore").textContent =
+        "Room score: " + (snap.val() || 0);
+    });
+
+    $("setupStatus").textContent = "";
+  } catch (error) {
+    console.error(error);
+    $("setupStatus").textContent =
+      "Connection failed: " + error.message;
+    $("joinBtn").disabled = false;
+  }
+}
+
+async function sendMessage() {
+  if (!me || !room) return;
+
+  const text = $("messageInput").value.trim();
+  if (!text) return;
+
+  $("sendBtn").disabled = true;
+
+  try {
+    const messageRef = push(ref(db, `rooms/${room}/messages`));
+    await set(messageRef, {
+      uid: me.uid,
+      name: $("username").value.trim().slice(0, 25),
+      text: text.slice(0, 2000),
+      createdAt: serverTimestamp()
+    });
+
+    $("messageInput").value = "";
+  } catch (error) {
+    alert("Message send nahi hua. Firebase Rules check karo.");
+    console.error(error);
+  } finally {
+    $("sendBtn").disabled = false;
+  }
+}
+
+async function tapGame() {
+  if (!room) return;
+
+  const scoreRef = ref(db, `rooms/${room}/game/score`);
+  await runTransaction(scoreRef, score => (score || 0) + 1);
+}
+
+async function resetGame() {
+  if (!room) return;
+
+  if (confirm("Room ka shared score reset karna hai?")) {
+    await set(ref(db, `rooms/${room}/game/score`), 0);
+  }
+}
+
+async function leaveRoom() {
+  if (stopMessages) stopMessages();
+  if (stopPresence) stopPresence();
+  if (stopScore) stopScore();
+
+  if (me && room) {
+    await set(ref(db, `rooms/${room}/presence/${me.uid}`), null);
+  }
+
+  room = "";
+  seenMessageIds.clear();
+  $("messages").replaceChildren();
+  $("chat").style.display = "none";
+  $("setup").style.display = "block";
+  $("joinBtn").disabled = false;
+  showStatus("Disconnected");
+}
+
+$("joinBtn").addEventListener("click", joinRoom);
+$("sendBtn").addEventListener("click", sendMessage);
+$("messageInput").addEventListener("keydown", event => {
+  if (event.key === "Enter") sendMessage();
+});
+$("tapBtn").addEventListener("click", tapGame);
+$("resetGameBtn").addEventListener("click", resetGame);
+$("leaveBtn").addEventListener("click", leaveRoom);
+
+$("shareBtn").addEventListener("click", async () => {
+  const invite = location.href.split("#")[0] + "#room=" + room;
+
+  try {
+    await navigator.clipboard.writeText(invite);
+    alert("Room link copied! Friend ko bhej do.");
+  } catch {
+    prompt("Is room link ko copy karo:", invite);
+  }
+});
+
+try {
+  const app = initializeApp(firebaseConfig);
+  auth = getAuth(app);
+  db = getDatabase(app);
+} catch (error) {
+  $("setupStatus").textContent =
+    "Firebase config check karo: " + error.message;
+  $("joinBtn").disabled = true;
+}
+</script>
+</body>
+</html>
+
+

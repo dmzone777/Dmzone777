@@ -1,5 +1,4 @@
 
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -8,304 +7,369 @@
 <title>LinkChat</title>
 <style>
 *{box-sizing:border-box}
-body{margin:0;font-family:Arial,sans-serif;background:#0b141a;color:#e9edef}
-header{background:#202c33;padding:15px;display:flex;align-items:center;justify-content:space-between}
+body{margin:0;background:#0b141a;color:#e9edef;font-family:Arial,sans-serif}
+header{background:#202c33;padding:15px;display:flex;justify-content:space-between;align-items:center}
 header h2{margin:0;color:#25d366}
-button,.filebtn{border:0;border-radius:8px;padding:10px 13px;background:#25d366;color:#062b1b;font-weight:bold;cursor:pointer}
-input{background:#202c33;color:white;border:1px solid #3b4a54;border-radius:8px;padding:12px;min-width:0}
-#setup{padding:18px;max-width:600px;margin:auto}
-#setup input{width:100%;margin:7px 0 12px}
-#chat{display:none;max-width:850px;margin:auto;height:calc(100dvh - 60px);flex-direction:column}
-#roombar{padding:12px;background:#202c33;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-#messages{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px}
-.msg{background:#202c33;padding:10px 12px;border-radius:10px;max-width:85%;overflow-wrap:anywhere;align-self:flex-start}
+section{max-width:800px;margin:auto}
+#setup{padding:20px}
+input{padding:12px;border:1px solid #3b4a54;background:#202c33;color:white;border-radius:8px;min-width:0}
+#setup input{width:100%;margin:7px 0 14px}
+button,.filebtn{border:0;border-radius:8px;padding:11px 14px;background:#25d366;color:#062b1b;font-weight:bold;cursor:pointer}
+button:disabled{opacity:.5}
+#chat{display:none;height:calc(100dvh - 58px);flex-direction:column}
+#roombar{background:#202c33;padding:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+#status{font-size:12px;color:#b7c8ce}
+#messages{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:10px}
+.msg{max-width:88%;background:#202c33;padding:10px;border-radius:10px;overflow-wrap:anywhere;align-self:flex-start}
 .msg.mine{background:#005c4b;align-self:flex-end}
-.msg small{display:block;color:#aebac1;margin-bottom:5px}
-.msg img,.msg video{max-width:100%;max-height:250px;border-radius:8px}
-.msg a{color:#8bd8ff}
-#composer{display:flex;gap:7px;padding:10px;background:#202c33;align-items:center}
-#messageInput{flex:1;width:100%}
-#status{font-size:13px;color:#b6c7ce}
-#game{padding:12px;background:#182229;text-align:center}
-#game button{margin:3px}
-#gameScore{font-size:18px;margin:8px}
-@media(max-width:500px){
- #chat{height:calc(100dvh - 45px)}
- #composer{gap:5px;padding:7px}
- #composer button{padding:10px 9px}
- .msg{max-width:92%}
+.msg small{display:block;color:#c2d5d0;margin-bottom:5px}
+.msg img,.msg video{max-width:100%;max-height:230px;border-radius:8px}
+.msg a{color:#9ce1ff}
+#game{background:#182229;text-align:center;padding:9px}
+#score{font-size:17px;margin:6px}
+#composer{display:flex;gap:6px;padding:8px;background:#202c33}
+#messageInput{flex:1;width:50px}
+#setupStatus{overflow-wrap:anywhere;color:#ffb4ab}
+@media(max-width:480px){
+ #composer{gap:4px}
+ #composer button{padding:10px}
+ .msg{max-width:94%}
 }
 </style>
 </head>
 <body>
-<header>
-  <h2>LinkChat</h2>
-  <span>💬 Connect & Chat</span>
-</header>
+<header><h2>LinkChat</h2><span>💬</span></header>
 
 <section id="setup">
-  <h3>Join a chat room</h3>
-  <label for="username">Your nickname</label>
-  <input id="username" maxlength="25" placeholder="Enter nickname">
-  <label for="roomInput">Room name</label>
-  <input id="roomInput" maxlength="40" placeholder="Example: friends123">
-  <button id="joinBtn">Join Room</button>
-  <p>Share the same room name with friends to chat together.</p>
-  <p id="setupStatus"></p>
+<h3>Join a chat room</h3>
+<label for="username">Nickname</label>
+<input id="username" maxlength="25" placeholder="Your nickname">
+<label for="roomInput">Room name</label>
+<input id="roomInput" maxlength="40" placeholder="Example: friends123">
+<button id="joinBtn">Join Room</button>
+<p>Same room name = same chat.</p>
+<p id="setupStatus"></p>
 </section>
 
-<main id="chat">
-  <div id="roombar">
-    <strong id="roomTitle">Room</strong>
-    <button id="shareBtn">Share Room</button>
-    <button id="leaveBtn">Leave</button>
-    <span id="status">Connecting…</span>
-  </div>
+<section id="chat">
+<div id="roombar">
+<strong id="roomTitle">Room</strong>
+<button id="shareBtn">Share</button>
+<button id="leaveBtn">Leave</button>
+<span id="status">Connecting...</span>
+</div>
 
-  <div id="messages" aria-live="polite"></div>
+<div id="messages"></div>
 
-  <div id="game">
-    <strong>🎮 Shared Click Game</strong>
-    <div id="gameScore">Room score: 0</div>
-    <button id="tapBtn">+1 Tap</button>
-    <button id="resetGameBtn">Reset score</button>
-  </div>
+<div id="game">
+<strong>🎮 Shared Click Game</strong>
+<div id="score">Room score: 0</div>
+<button id="tapBtn">+1 Tap</button>
+</div>
 
-  <div id="composer">
-    <input id="fileInput" type="file" hidden>
-    <button id="fileBtn" title="Attach a file">📎</button>
-    <input id="messageInput" maxlength="2000"
-           placeholder="Type a message…">
-    <button id="sendBtn">Send</button>
-  </div>
-</main>
+<div id="composer">
+<input id="fileInput" type="file" hidden>
+<button id="fileBtn" title="Attach file">📎</button>
+<input id="messageInput" maxlength="2000" placeholder="Message...">
+<button id="sendBtn">Send</button>
+</div>
+</section>
 
 <script type="module">
-import { initializeApp } from
-  "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
+import {initializeApp}
+from "https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js";
+
+import {getAuth, signInAnonymously}
+from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
 
 import {
-  getAuth,
-  signInAnonymously
-} from "https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js";
-
-import {
-  getDatabase,
-  ref,
-  push,
-  set,
-  onValue,
-  onChildAdded,
-  onDisconnect,
-  serverTimestamp,
-  runTransaction
+ getDatabase, ref, push, set, onValue,
+ onChildAdded, onDisconnect, serverTimestamp,
+ runTransaction
 } from "https://www.gstatic.com/firebasejs/11.6.0/firebase-database.js";
 
-/* Apne Firebase project ki web config yahan paste karo. */
+import {
+ getStorage, ref as storageRef,
+ uploadBytes, getDownloadURL
+} from "https://www.gstatic.com/firebasejs/11.6.0/firebase-storage.js";
+
+/* Firebase Console se apni asli Web App config bharo */
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "mini-instagram-95485.firebaseapp.com",
-  databaseURL: "https://mini-instagram-95485-default-rtdb.firebaseio.com",
-  projectId: "mini-instagram-95485",
-  storageBucket: "mini-instagram-95485.firebasestorage.app",
-  messagingSenderId: "426906615408",
-  appId: "YOUR_APP_ID"
+ apiKey: "YOUR_API_KEY",
+ authDomain: "mini-instagram-95485.firebaseapp.com",
+ databaseURL: "https://mini-instagram-95485-default-rtdb.firebaseio.com",
+ projectId: "mini-instagram-95485",
+ storageBucket: "mini-instagram-95485.firebasestorage.app",
+ messagingSenderId: "426906615408",
+ appId: "YOUR_APP_ID"
 };
 
 const $ = id => document.getElementById(id);
+let auth, db, storage, me, room, nickname;
+let stopMessages, stopPresence, stopPeople, stopScore;
+let messageIds = new Set();
 
-let db, auth, me, room = "";
-let stopMessages = null;
-let stopPresence = null;
-let stopScore = null;
-let seenMessageIds = new Set();
-
-function showStatus(text) {
-  $("status").textContent = text;
+function roomSafe(s){
+ return s.trim().replace(/[^a-zA-Z0-9_-]/g,"").slice(0,40);
 }
 
-function cleanRoom(value) {
-  return value.trim().replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 40);
+function showError(error){
+ console.error(error);
+ $("setupStatus").textContent =
+  "Error: " + (error.message || error);
 }
 
-function addMessage(id, data) {
-  if (seenMessageIds.has(id)) return;
-  seenMessageIds.add(id);
+function drawMessage(id,m){
+ if(messageIds.has(id)) return;
+ messageIds.add(id);
 
-  const box = document.createElement("div");
-  box.className = "msg" + (data.uid === me.uid ? " mine" : "");
+ const box=document.createElement("div");
+ box.className="msg"+(m.uid===me.uid?" mine":"");
 
-  const name = document.createElement("small");
-  name.textContent = data.name || "Guest";
-  box.appendChild(name);
+ const who=document.createElement("small");
+ who.textContent=m.name || "Guest";
+ box.appendChild(who);
 
-  if (data.text) {
-    const text = document.createElement("div");
-    text.textContent = data.text;
-    box.appendChild(text);
+ if(m.text){
+  const t=document.createElement("div");
+  t.textContent=m.text;
+  box.appendChild(t);
+ }
+
+ if(m.fileUrl){
+  const link=document.createElement("a");
+  link.href=m.fileUrl;
+  link.target="_blank";
+  link.rel="noopener noreferrer";
+  link.textContent="📎 "+(m.fileName || "Open file");
+  box.appendChild(link);
+
+  if((m.fileType||"").startsWith("image/")){
+   const img=document.createElement("img");
+   img.src=m.fileUrl;
+   img.alt=m.fileName || "Shared image";
+   img.loading="lazy";
+   box.appendChild(img);
+  }else if((m.fileType||"").startsWith("video/")){
+   const video=document.createElement("video");
+   video.src=m.fileUrl;
+   video.controls=true;
+   video.preload="metadata";
+   box.appendChild(video);
+  }else if((m.fileType||"").startsWith("audio/")){
+   const audio=document.createElement("audio");
+   audio.src=m.fileUrl;
+   audio.controls=true;
+   box.appendChild(audio);
   }
+ }
 
-  $("messages").appendChild(box);
-  $("messages").scrollTop = $("messages").scrollHeight;
+ $("messages").appendChild(box);
+ $("messages").scrollTop=$("messages").scrollHeight;
 }
 
-async function joinRoom() {
-  const name = $("username").value.trim().slice(0, 25);
-  const roomName = cleanRoom($("roomInput").value);
-
-  if (!name || !roomName) {
-    $("setupStatus").textContent =
-      "Nickname aur room name dono bharo.";
-    return;
-  }
-
-  $("setupStatus").textContent = "Connecting…";
-  $("joinBtn").disabled = true;
-
-  try {
-    if (!auth.currentUser) {
-      await signInAnonymously(auth);
-    }
-
-    me = auth.currentUser;
-    room = roomName;
-
-    $("roomTitle").textContent = "Room: " + room;
-    $("setup").style.display = "none";
-    $("chat").style.display = "flex";
-
-    const myPresence = ref(db, `rooms/${room}/presence/${me.uid}`);
-    const connectedRef = ref(db, ".info/connected");
-
-    stopPresence = onValue(connectedRef, async snap => {
-      if (snap.val() === true) {
-        await onDisconnect(myPresence).remove();
-        await set(myPresence, {
-          name,
-          online: true,
-          lastSeen: serverTimestamp()
-        });
-      }
-    });
-
-    const presenceRef = ref(db, `rooms/${room}/presence`);
-    onValue(presenceRef, snap => {
-      const people = snap.val() || {};
-      const count = Object.values(people)
-        .filter(person => person.online).length;
-      showStatus(`${count} online`);
-    });
-
-    const messagesRef = ref(db, `rooms/${room}/messages`);
-    stopMessages = onChildAdded(messagesRef, snap => {
-      addMessage(snap.key, snap.val());
-    });
-
-    const scoreRef = ref(db, `rooms/${room}/game/score`);
-    stopScore = onValue(scoreRef, snap => {
-      $("gameScore").textContent =
-        "Room score: " + (snap.val() || 0);
-    });
-
-    $("setupStatus").textContent = "";
-  } catch (error) {
-    console.error(error);
-    $("setupStatus").textContent =
-      "Connection failed: " + error.message;
-    $("joinBtn").disabled = false;
-  }
+async function sendRecord(data){
+ if(!me || !room) return;
+ const messageRef=push(ref(db,`rooms/${room}/messages`));
+ await set(messageRef,{
+  uid:me.uid,
+  name:nickname,
+  text:data.text || "",
+  fileUrl:data.fileUrl || "",
+  fileName:data.fileName || "",
+  fileType:data.fileType || "",
+  createdAt:serverTimestamp()
+ });
 }
 
-async function sendMessage() {
-  if (!me || !room) return;
+async function joinRoom(){
+ nickname=$("username").value.trim().slice(0,25);
+ room=roomSafe($("roomInput").value);
 
-  const text = $("messageInput").value.trim();
-  if (!text) return;
+ if(!nickname || !room){
+  $("setupStatus").textContent="Nickname aur room name bharo.";
+  return;
+ }
 
-  $("sendBtn").disabled = true;
+ $("joinBtn").disabled=true;
+ $("setupStatus").textContent="Connecting...";
 
-  try {
-    const messageRef = push(ref(db, `rooms/${room}/messages`));
-    await set(messageRef, {
-      uid: me.uid,
-      name: $("username").value.trim().slice(0, 25),
-      text: text.slice(0, 2000),
-      createdAt: serverTimestamp()
-    });
+ try{
+  if(!auth.currentUser) await signInAnonymously(auth);
+  me=auth.currentUser;
 
-    $("messageInput").value = "";
-  } catch (error) {
-    alert("Message send nahi hua. Firebase Rules check karo.");
-    console.error(error);
-  } finally {
-    $("sendBtn").disabled = false;
-  }
-}
-
-async function tapGame() {
-  if (!room) return;
-
-  const scoreRef = ref(db, `rooms/${room}/game/score`);
-  await runTransaction(scoreRef, score => (score || 0) + 1);
-}
-
-async function resetGame() {
-  if (!room) return;
-
-  if (confirm("Room ka shared score reset karna hai?")) {
-    await set(ref(db, `rooms/${room}/game/score`), 0);
-  }
-}
-
-async function leaveRoom() {
-  if (stopMessages) stopMessages();
-  if (stopPresence) stopPresence();
-  if (stopScore) stopScore();
-
-  if (me && room) {
-    await set(ref(db, `rooms/${room}/presence/${me.uid}`), null);
-  }
-
-  room = "";
-  seenMessageIds.clear();
+  $("roomTitle").textContent="Room: "+room;
+  $("setup").style.display="none";
+  $("chat").style.display="flex";
   $("messages").replaceChildren();
-  $("chat").style.display = "none";
-  $("setup").style.display = "block";
-  $("joinBtn").disabled = false;
-  showStatus("Disconnected");
+  messageIds.clear();
+
+  const myRef=ref(db,`rooms/${room}/presence/${me.uid}`);
+  const connectionRef=ref(db,".info/connected");
+
+  stopPresence=onValue(connectionRef,async snap=>{
+   if(snap.val()===true){
+    try{
+     await onDisconnect(myRef).remove();
+     await set(myRef,{
+      name:nickname,
+      online:true,
+      lastSeen:serverTimestamp()
+     });
+    }catch(e){console.error(e);}
+   }
+  });
+
+  stopPeople=onValue(ref(db,`rooms/${room}/presence`),snap=>{
+   const people=Object.values(snap.val()||{});
+   $("status").textContent=
+    people.length+" online";
+  });
+
+  stopMessages=onChildAdded(
+   ref(db,`rooms/${room}/messages`),
+   snap=>drawMessage(snap.key,snap.val())
+  );
+
+  stopScore=onValue(ref(db,`rooms/${room}/game/score`),snap=>{
+   $("score").textContent="Room score: "+(snap.val()||0);
+  });
+
+  $("setupStatus").textContent="";
+ }catch(e){
+  room="";
+  showError(e);
+  $("joinBtn").disabled=false;
+ }
 }
 
-$("joinBtn").addEventListener("click", joinRoom);
-$("sendBtn").addEventListener("click", sendMessage);
-$("messageInput").addEventListener("keydown", event => {
-  if (event.key === "Enter") sendMessage();
-});
-$("tapBtn").addEventListener("click", tapGame);
-$("resetGameBtn").addEventListener("click", resetGame);
-$("leaveBtn").addEventListener("click", leaveRoom);
+async function sendText(){
+ const text=$("messageInput").value.trim();
+ if(!text || !room) return;
+ $("sendBtn").disabled=true;
+ try{
+  await sendRecord({text});
+  $("messageInput").value="";
+ }catch(e){
+  alert("Message send nahi hua. Firebase Database Rules check karo.");
+  console.error(e);
+ }finally{
+  $("sendBtn").disabled=false;
+ }
+}
 
-$("shareBtn").addEventListener("click", async () => {
-  const invite = location.href.split("#")[0] + "#room=" + room;
+async function sendFile(file){
+ if(!file || !room || !me) return;
 
-  try {
-    await navigator.clipboard.writeText(invite);
-    alert("Room link copied! Friend ko bhej do.");
-  } catch {
-    prompt("Is room link ko copy karo:", invite);
+ // Accidental very large uploads se bachne ke liye 25 MB limit.
+ if(file.size>25*1024*1024){
+  alert("File 25 MB se chhoti honi chahiye.");
+  return;
+ }
+
+ $("fileBtn").disabled=true;
+ $("status").textContent="Uploading...";
+
+ try{
+  const safeName=file.name.replace(/[^a-zA-Z0-9._-]/g,"_").slice(-100);
+  const path=`rooms/${room}/${me.uid}/${Date.now()}_${safeName}`;
+  const obj=storageRef(storage,path);
+
+  await uploadBytes(obj,file);
+  const url=await getDownloadURL(obj);
+
+  await sendRecord({
+   text:"",
+   fileUrl:url,
+   fileName:file.name,
+   fileType:file.type || "application/octet-stream"
+  });
+
+  $("status").textContent="Uploaded";
+ }catch(e){
+  console.error(e);
+  alert("Upload failed. Firebase Storage setup aur Rules check karo.");
+  $("status").textContent="Upload failed";
+ }finally{
+  $("fileBtn").disabled=false;
+  $("fileInput").value="";
+ }
+}
+
+async function tapGame(){
+ if(!room) return;
+ try{
+  await runTransaction(
+   ref(db,`rooms/${room}/game/score`),
+   score=>(score||0)+1
+  );
+ }catch(e){
+  alert("Game score update nahi hua. Database Rules check karo.");
+  console.error(e);
+ }
+}
+
+async function leaveRoom(){
+ if(stopMessages) stopMessages();
+ if(stopPresence) stopPresence();
+ if(stopPeople) stopPeople();
+ if(stopScore) stopScore();
+
+ try{
+  if(me && room){
+   await set(ref(db,`rooms/${room}/presence/${me.uid}`),null);
   }
+ }catch(e){console.error(e);}
+
+ room="";
+ messageIds.clear();
+ $("messages").replaceChildren();
+ $("chat").style.display="none";
+ $("setup").style.display="block";
+ $("joinBtn").disabled=false;
+ $("status").textContent="Disconnected";
+}
+
+$("joinBtn").addEventListener("click",joinRoom);
+$("sendBtn").addEventListener("click",sendText);
+$("messageInput").addEventListener("keydown",e=>{
+ if(e.key==="Enter") sendText();
+});
+$("tapBtn").addEventListener("click",tapGame);
+$("leaveBtn").addEventListener("click",leaveRoom);
+$("fileBtn").addEventListener("click",()=>$("fileInput").click());
+$("fileInput").addEventListener("change",e=>{
+ const file=e.target.files[0];
+ if(file) sendFile(file);
 });
 
-try {
-  const app = initializeApp(firebaseConfig);
-  auth = getAuth(app);
-  db = getDatabase(app);
-} catch (error) {
-  $("setupStatus").textContent =
-    "Firebase config check karo: " + error.message;
-  $("joinBtn").disabled = true;
+$("shareBtn").addEventListener("click",async()=>{
+ const url=new URL(location.href);
+ url.hash="room="+encodeURIComponent(room);
+ try{
+  if(navigator.share){
+   await navigator.share({title:"Join my LinkChat room",url:url.href});
+  }else{
+   await navigator.clipboard.writeText(url.href);
+   alert("Room link copied!");
+  }
+ }catch(e){
+  prompt("Room link copy karo:",url.href);
+ }
+});
+
+const hash=new URLSearchParams(location.hash.slice(1));
+if(hash.get("room")) $("roomInput").value=roomSafe(hash.get("room"));
+
+try{
+ const app=initializeApp(firebaseConfig);
+ auth=getAuth(app);
+ db=getDatabase(app);
+ storage=getStorage(app);
+}catch(e){
+ showError(e);
+ $("joinBtn").disabled=true;
 }
 </script>
 </body>
 </html>
-
-
